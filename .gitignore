@@ -12,3 +12,8 @@ TestResults/
 
 # Local Claude Code session state
 /.claude/
+
+# Private planning docs (kept local, not published)
+/Swivel PRD.md
+/Swivel Tech Spec.md
+/Swivel Design Doc.md

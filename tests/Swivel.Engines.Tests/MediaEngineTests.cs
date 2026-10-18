@@ -6,6 +6,7 @@ using Xunit.Abstractions;
 
 namespace Swivel.Engines.Tests;
 
+[Collection(FfmpegCollection.Name)]
 public class MediaEngineTests(ITestOutputHelper output) : IDisposable
 {
     private readonly Fixtures _fixtures = new();
@@ -110,7 +111,8 @@ public class MediaEngineTests(ITestOutputHelper output) : IDisposable
         await Task.Delay(1500);
         group.Cancel();
         var result = await group.Completion;
-        await Task.Delay(300);
+        // Killing is asynchronous; give the process tree a moment to exit before counting.
+        for (int i = 0; i < 50 && Process.GetProcessesByName("ffmpeg").Length > ffmpegBefore; i++) await Task.Delay(100);
 
         Assert.True(result.Cancelled);
         Assert.Equal([input], Directory.GetFileSystemEntries(_fixtures.Dir));

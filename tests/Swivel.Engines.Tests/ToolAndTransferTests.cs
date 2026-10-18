@@ -7,6 +7,7 @@ using VipsImage = NetVips.Image;
 
 namespace Swivel.Engines.Tests;
 
+[Collection(FfmpegCollection.Name)]
 public class ToolAndTransferTests : IDisposable
 {
     private readonly Fixtures _fixtures = new();

@@ -141,3 +141,13 @@ public sealed class Fixtures : IDisposable
         try { Directory.Delete(Dir, recursive: true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
     }
 }
+
+/// <summary>
+/// Test classes that start FFmpeg run one after another, so a test that counts FFmpeg processes
+/// (cancel must leave none behind) never sees another class's encode.
+/// </summary>
+[CollectionDefinition(Name, DisableParallelization = true)]
+public sealed class FfmpegCollection
+{
+    public const string Name = "FFmpeg";
+}

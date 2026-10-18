@@ -30,10 +30,12 @@ public sealed class SwivelSession : IDisposable
 
     public UIA3Automation Automation { get; } = new();
 
+    /// <summary>The dev build next to the tests, or any Swivel.exe named by SWIVEL_EXE (an installed copy).</summary>
     public static string Exe
     {
         get
         {
+            if (Environment.GetEnvironmentVariable("SWIVEL_EXE") is { Length: > 0 } custom && File.Exists(custom)) return custom;
             string config = AppContext.BaseDirectory.Contains($"{Path.DirectorySeparatorChar}Release{Path.DirectorySeparatorChar}") ? "Release" : "Debug";
             for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir != null; dir = dir.Parent)
             {

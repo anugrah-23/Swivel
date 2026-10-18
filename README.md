@@ -27,8 +27,13 @@ you copied, or right-click files and pick **Spin with Swivel**.
 
 ## Install
 
-Download `Swivel-win-Setup.exe` from Releases and run it. It installs per user, needs no admin
-rights, and updates itself. Windows 10 (2004 or later) and Windows 11, x64.
+Download `Swivel-win-Setup.exe` from the [latest release](https://github.com/anugrah-23/Swivel/releases/latest)
+and run it. It installs per user, needs no admin rights, and updates itself. Windows 10 (2004 or
+later) and Windows 11, x64.
+
+Preview builds aren't code-signed yet, so Windows SmartScreen says "Windows protected your PC".
+Choose **More info → Run anyway**. Until signed builds arrive, "Spin with Swivel" on Windows 11 sits
+under **Show more options**.
 
 HEIC photos use Windows' free HEIF and HEVC extensions from the Microsoft Store. Document conversion
 (Pandoc, 40 MB) and Office-to-PDF without Microsoft Office (LibreOffice, 373 MB) download the first

@@ -36,3 +36,14 @@ H.264 video is encoded by Windows' Media Foundation encoder where available.
 
 Licence texts for the fonts are in the `licenses` folder next to Swivel.exe; FFmpeg's and 7-Zip's
 are in their folders under `engines`.
+
+## Source code for the engines Swivel distributes
+
+Swivel distributes these programs unmodified. Their exact source code is mirrored on the
+[engines-v1 release](https://github.com/anugrah-23/Swivel/releases/tag/engines-v1) and available upstream:
+
+- FFmpeg, commit `46d899d7a02bc63237472cc4897258d5ddf274ac` (release/8.1), built by
+  [BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds) as the `win64-lgpl-shared-8.1` variant:
+  https://github.com/FFmpeg/FFmpeg/tree/46d899d7a02bc63237472cc4897258d5ddf274ac
+- Pandoc 3.12.1: https://github.com/jgm/pandoc/tree/3.12.1
+- 7-Zip 26.04: https://www.7-zip.org/a/7z2604-src.tar.xz

@@ -36,12 +36,15 @@ if ($LASTEXITCODE -ne 0) { throw 'Building Swivel.ShellExt failed.' }
 Copy-Item (Join-Path $root 'artifacts\shellext\Swivel.ShellExt.dll') $publish
 Copy-Item (Join-Path $root 'THIRD-PARTY-NOTICES.md') (Join-Path $publish 'licenses') -ErrorAction SilentlyContinue
 
+$notesFile = Join-Path (Join-Path $root "docs/release-notes") "$($Version.Split('-')[0]).md"
+$notes = if (Test-Path $notesFile) { @('--releaseNotes', $notesFile) } else { @() }
+
 Push-Location $root
 try {
     & $dotnet tool restore | Out-Null
     & $dotnet vpk pack --packId Swivel --packVersion $Version --packDir $publish --mainExe Swivel.exe `
         --packTitle Swivel --packAuthors 'Anugrah Chari V' --icon (Join-Path $root 'src\Swivel.App\Assets\swivel.ico') `
-        --outputDir $releases | Out-Host
+        --outputDir $releases @notes | Out-Host
     if ($LASTEXITCODE -ne 0) { throw 'vpk pack failed.' }
 } finally { Pop-Location }
 

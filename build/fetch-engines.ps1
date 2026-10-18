@@ -28,11 +28,22 @@ if (Test-Path $lockPath) {
     (Get-Content $lockPath -Raw | ConvertFrom-Json).PSObject.Properties | ForEach-Object { $lock[$_.Name] = $_.Value }
 }
 
+# Swivel keeps its own copy of every engine as assets of the "engines-v1" release, uploaded by CI
+# (see .github/workflows/ci.yml), because upstream builds get deleted. The mirror is tried first;
+# either way the file must match the SHA-256 pinned for its upstream URL.
+$mirror = 'https://github.com/anugrah-23/Swivel/releases/download/engines-v1'
+
 function Get-Pinned([string]$Url) {
-    $file = Join-Path $cache ([IO.Path]::GetFileName(([Uri]$Url).AbsolutePath))
+    $name = [IO.Path]::GetFileName(([Uri]$Url).AbsolutePath)
+    $file = Join-Path $cache $name
     if ($Force -or -not (Test-Path $file)) {
-        Write-Host "Downloading $Url"
-        Invoke-WebRequest -Uri $Url -OutFile $file -UseBasicParsing
+        try {
+            Invoke-WebRequest -Uri "$mirror/$name" -OutFile $file -UseBasicParsing
+            Write-Host "Downloaded $name from Swivel's mirror"
+        } catch {
+            Write-Host "Downloading $Url"
+            Invoke-WebRequest -Uri $Url -OutFile $file -UseBasicParsing
+        }
     }
     $hash = (Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($lock.ContainsKey($Url)) {

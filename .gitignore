@@ -1,0 +1,14 @@
+bin/
+obj/
+.vs/
+*.user
+TestResults/
+/engines/*
+!/engines/README.md
+/artifacts/
+
+# Local HEIC sample for engine tests (personal photo; never commit)
+/tests/fixtures/sample.heic
+
+# Local Claude Code session state
+/.claude/

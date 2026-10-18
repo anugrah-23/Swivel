@@ -1,0 +1,70 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Design tokens from the Swivel Design Doc. -->
+    <Color x:Key="InkColor">#111111</Color>
+    <Color x:Key="CreamColor">#FFF6E5</Color>
+    <Color x:Key="PaperColor">#FFFFFF</Color>
+    <Color x:Key="SunflowerColor">#FFD23F</Color>
+    <Color x:Key="PinkColor">#FF7AAC</Color>
+    <Color x:Key="SkyColor">#5FB8FF</Color>
+    <Color x:Key="MintColor">#3DDC97</Color>
+    <Color x:Key="OrangeColor">#FF8A3D</Color>
+    <Color x:Key="LilacColor">#C9B8FF</Color>
+
+    <SolidColorBrush x:Key="Ink" Color="{StaticResource InkColor}" />
+    <SolidColorBrush x:Key="Cream" Color="{StaticResource CreamColor}" />
+    <SolidColorBrush x:Key="Paper" Color="{StaticResource PaperColor}" />
+    <SolidColorBrush x:Key="Sunflower" Color="{StaticResource SunflowerColor}" />
+    <SolidColorBrush x:Key="Pink" Color="{StaticResource PinkColor}" />
+    <SolidColorBrush x:Key="Sky" Color="{StaticResource SkyColor}" />
+    <SolidColorBrush x:Key="Mint" Color="{StaticResource MintColor}" />
+    <SolidColorBrush x:Key="Orange" Color="{StaticResource OrangeColor}" />
+    <SolidColorBrush x:Key="Lilac" Color="{StaticResource LilacColor}" />
+
+    <!-- Embedded under the SIL Open Font License; see licenses\ next to Swivel.exe. -->
+    <FontFamily x:Key="DisplayFont">pack://application:,,,/Fonts/#Archivo, Archivo Black, Segoe UI Black</FontFamily>
+    <FontFamily x:Key="BodyFont">pack://application:,,,/Fonts/#Space Grotesk, Segoe UI</FontFamily>
+    <FontFamily x:Key="MonoFont">pack://application:,,,/Fonts/#Space Mono, Consolas</FontFamily>
+
+    <!-- Chunky button: paper fill, 2.5 px ink outline, 3 px hard shadow that collapses on press. -->
+    <Style x:Key="SwivelButton" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource Paper}" />
+        <Setter Property="Foreground" Value="{StaticResource Ink}" />
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+        <Setter Property="FontWeight" Value="ExtraBold" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="10,5" />
+        <Setter Property="Margin" Value="0,0,8,0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid>
+                        <Border x:Name="Shadow" Background="{StaticResource Ink}" CornerRadius="10" Margin="3,3,-3,-3" />
+                        <Border x:Name="Face" Background="{TemplateBinding Background}" BorderBrush="{StaticResource Ink}"
+                                BorderThickness="2.5" CornerRadius="10" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource Sunflower}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Face" Property="RenderTransform">
+                                <Setter.Value>
+                                    <TranslateTransform X="2" Y="2" />
+                                </Setter.Value>
+                            </Setter>
+                            <Setter TargetName="Shadow" Property="Margin" Value="1,1,-1,-1" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

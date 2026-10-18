@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <!-- WPF imaging is used only as a WIC front end, so HEIC decodes through Windows' own HEIF extension. -->
+    <UseWPF>true</UseWPF>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Using Include="System.IO" />
+    <InternalsVisibleTo Include="Swivel.Engines.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Swivel.Core\Swivel.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="bblanchon.PDFium.Win32" Version="157.0.8100" />
+    <PackageReference Include="NetVips" Version="3.2.0" />
+    <PackageReference Include="NetVips.Native.win-x64" Version="8.18.7" />
+    <!-- Pinned: 6.2.4 is the last MIT release; 6.5+ is AGPL/commercial. -->
+    <PackageReference Include="PDFsharp" Version="6.2.4" />
+    <PackageReference Include="SharpCompress" Version="0.50.5" />
+  </ItemGroup>
+</Project>

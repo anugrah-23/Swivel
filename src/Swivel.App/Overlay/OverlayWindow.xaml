@@ -1,0 +1,107 @@
+<Window x:Class="Swivel.App.Overlay.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Swivel wheel"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowActivated="False" ShowInTaskbar="False" ResizeMode="NoResize"
+        Width="420" Height="640" Left="-32000" Top="-32000"
+        AllowDrop="True" Focusable="False">
+    <!-- Logical layout: disc centre at (210, 220). See OverlayWindow.DiscCentre. -->
+    <Canvas x:Name="Root" Width="420" Height="640" Background="Transparent" AllowDrop="True" Visibility="Hidden"
+            TextOptions.TextFormattingMode="Display">
+
+        <!-- Mode pill -->
+        <Border x:Name="PillShadow" Canvas.Top="11" Background="{StaticResource Ink}" CornerRadius="16" Height="34" />
+        <Border x:Name="Pill" Canvas.Top="6" Background="{StaticResource Paper}" BorderBrush="{StaticResource Ink}"
+                BorderThickness="3" CornerRadius="16" Height="34" Padding="4,0">
+            <StackPanel x:Name="PillPanel" Orientation="Horizontal" VerticalAlignment="Center" />
+        </Border>
+
+        <!-- Wheel: disc, ring of tiles, rim arc, hub -->
+        <Canvas x:Name="Wheel" Width="420" Height="440">
+            <Canvas.RenderTransform>
+                <ScaleTransform x:Name="WheelScale" CenterX="210" CenterY="220" ScaleX="1" ScaleY="1" />
+            </Canvas.RenderTransform>
+
+            <Ellipse Canvas.Left="48" Canvas.Top="58" Width="340" Height="340" Fill="{StaticResource Ink}" />
+            <Ellipse x:Name="Disc" Canvas.Left="40" Canvas.Top="50" Width="340" Height="340"
+                     Fill="{StaticResource Sunflower}" Stroke="{StaticResource Ink}" StrokeThickness="3" />
+
+            <Canvas x:Name="Ring" Width="420" Height="440">
+                <Canvas.RenderTransform>
+                    <RotateTransform x:Name="RingSpin" CenterX="210" CenterY="220" Angle="0" />
+                </Canvas.RenderTransform>
+            </Canvas>
+
+            <Path x:Name="RimArc" Stroke="{StaticResource Ink}" StrokeThickness="9" StrokeStartLineCap="Round"
+                  StrokeEndLineCap="Round" Visibility="Hidden">
+                <Path.RenderTransform>
+                    <RotateTransform x:Name="RimSpin" CenterX="210" CenterY="220" Angle="0" />
+                </Path.RenderTransform>
+            </Path>
+
+            <!-- Hub -->
+            <Ellipse Canvas.Left="154" Canvas.Top="164" Width="112" Height="112"
+                     Fill="{StaticResource Paper}" Stroke="{StaticResource Ink}" StrokeThickness="3" />
+            <StackPanel x:Name="HubText" Canvas.Left="160" Canvas.Top="176" Width="100">
+                <Grid HorizontalAlignment="Center" Height="44" Margin="0,0,0,2">
+                    <!-- Stacked look for batches: a second card peeks out behind the thumbnail. -->
+                    <Border x:Name="HubStack" Width="40" Height="40" CornerRadius="8" Background="{StaticResource Lilac}"
+                            BorderBrush="{StaticResource Ink}" BorderThickness="2" Margin="6,0,0,4" Visibility="Collapsed" />
+                    <Border x:Name="HubThumbFrame" Width="40" Height="40" CornerRadius="8" BorderBrush="{StaticResource Ink}"
+                            BorderThickness="2" Margin="0,4,6,0" Visibility="Collapsed" ClipToBounds="True">
+                        <Border.Background>
+                            <ImageBrush x:Name="HubThumb" Stretch="UniformToFill" />
+                        </Border.Background>
+                    </Border>
+                    <TextBlock x:Name="HubCount" HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="{StaticResource MonoFont}"
+                               FontWeight="Bold" FontSize="18" Foreground="{StaticResource Ink}" Text="···" />
+                    <Border x:Name="HubBadge" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-14,0"
+                            Background="{StaticResource Ink}" CornerRadius="9" Padding="5,1" Visibility="Collapsed">
+                        <TextBlock x:Name="HubBadgeText" FontFamily="{StaticResource MonoFont}" FontWeight="Bold" FontSize="10"
+                                   Foreground="{StaticResource Sunflower}" />
+                    </Border>
+                </Grid>
+                <TextBlock x:Name="HubName" HorizontalAlignment="Center" TextAlignment="Center" TextTrimming="CharacterEllipsis"
+                           TextWrapping="NoWrap" MaxWidth="96" FontFamily="{StaticResource BodyFont}" FontWeight="Bold"
+                           FontSize="12" Foreground="{StaticResource Ink}" />
+                <TextBlock x:Name="HubMeta" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                           MaxWidth="96" FontFamily="{StaticResource MonoFont}" FontSize="10" Foreground="{StaticResource Ink}" />
+            </StackPanel>
+        </Canvas>
+
+        <!-- Preview card -->
+        <Canvas x:Name="Card" Canvas.Left="40" Canvas.Top="418" Width="340" Height="104">
+            <Border Canvas.Left="5" Canvas.Top="5" Width="340" Height="104" CornerRadius="12" Background="{StaticResource Ink}" />
+            <Border Width="340" Height="104" CornerRadius="12" Background="{StaticResource Paper}"
+                    BorderBrush="{StaticResource Ink}" BorderThickness="3" Padding="16,10">
+                <StackPanel>
+                    <TextBlock x:Name="CardTitle" FontFamily="{StaticResource DisplayFont}" FontWeight="Black" FontSize="22"
+                               Foreground="{StaticResource Ink}" Text="PICK A WEDGE" />
+                    <TextBlock x:Name="CardDetail" FontFamily="{StaticResource BodyFont}" FontSize="13" Margin="0,4,0,0"
+                               Foreground="{StaticResource Ink}" />
+                    <TextBlock x:Name="CardCta" FontFamily="{StaticResource BodyFont}" FontWeight="Bold" FontSize="13" Margin="0,6,0,0"
+                               Foreground="{StaticResource Ink}" Text="Let go to apply" />
+                </StackPanel>
+            </Border>
+            <!-- Savings sticker -->
+            <Border x:Name="Sticker" Canvas.Left="252" Canvas.Top="-14" Background="{StaticResource Pink}" BorderBrush="{StaticResource Ink}"
+                    BorderThickness="2.5" CornerRadius="8" Padding="8,3" Visibility="Hidden" RenderTransformOrigin="0.5,0.5">
+                <Border.RenderTransform>
+                    <RotateTransform Angle="8" />
+                </Border.RenderTransform>
+                <TextBlock x:Name="StickerText" FontFamily="{StaticResource DisplayFont}" FontWeight="Black" FontSize="15"
+                           Foreground="{StaticResource Ink}" />
+            </Border>
+        </Canvas>
+
+        <!-- Key hints -->
+        <Grid Canvas.Top="542" Width="420">
+            <Border HorizontalAlignment="Center" Background="{StaticResource Paper}" BorderBrush="{StaticResource Ink}"
+                    BorderThickness="2.5" CornerRadius="10" Padding="10,4">
+                <TextBlock x:Name="KeyHints" FontFamily="{StaticResource MonoFont}" FontWeight="Bold" FontSize="11"
+                           Foreground="{StaticResource Ink}" />
+            </Border>
+        </Grid>
+    </Canvas>
+</Window>

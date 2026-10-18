@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Authors>Anugrah Chari V</Authors>
+    <Product>Swivel</Product>
+    <Copyright>Copyright (c) 2026 Anugrah Chari V</Copyright>
+  </PropertyGroup>
+</Project>

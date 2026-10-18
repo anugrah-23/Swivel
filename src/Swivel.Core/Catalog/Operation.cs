@@ -19,8 +19,16 @@ public sealed record Operation(
 
     public IReadOnlyDictionary<string, string> Parameters { get; init; } = new Dictionary<string, string>();
 
-    /// <summary>Trim, Crop and Resize open a small panel after the drop.</summary>
-    public bool NeedsPanel { get; init; }
+    /// <summary>
+    /// A small panel opens after the drop to ask for details: "resize", "crop", "trim", or "folder"
+    /// for Copy to / Move to without a pinned folder. Its answers are merged into <see cref="Parameters"/>.
+    /// </summary>
+    public string? Panel { get; init; }
+
+    public bool NeedsPanel => Panel != null;
+
+    /// <summary>Move to: the input itself is relocated, so a failed job must put it back, never delete it.</summary>
+    public bool MovesInput { get; init; }
 
     /// <summary>Video and Office jobs run in the 1–2 heavy slots.</summary>
     public bool Heavy { get; init; }
@@ -50,6 +58,14 @@ public sealed record Operation(
 
     public bool Accepts(int inputCount) => inputCount >= MinInputs && inputCount <= MaxInputs;
 
+    /// <summary>A copy with extra parameters merged over the existing ones (panel answers, presets).</summary>
+    public Operation WithParameters(IReadOnlyDictionary<string, string> extra)
+    {
+        var merged = new Dictionary<string, string>(Parameters);
+        foreach (var (key, value) in extra) merged[key] = value;
+        return this with { Parameters = merged };
+    }
+
     public static class Engines
     {
         public const string Image = "image";
@@ -59,5 +75,6 @@ public sealed record Operation(
         public const string Office = "office";
         public const string Pdf = "pdf";
         public const string Archive = "archive";
+        public const string Transfer = "transfer";
     }
 }

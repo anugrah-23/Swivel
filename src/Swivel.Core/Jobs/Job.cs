@@ -39,4 +39,7 @@ public sealed record JobGroupResult(
     DateTimeOffset Finished)
 {
     public bool Succeeded => !Cancelled && Failures.Count == 0;
+
+    /// <summary>Which input each output came from (for a combined job, the first input).</summary>
+    public IReadOnlyDictionary<string, string> Sources { get; init; } = new Dictionary<string, string>();
 }

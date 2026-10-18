@@ -7,6 +7,7 @@ using Swivel.Core.Jobs;
 using Swivel.Core.Settings;
 using Swivel.Engines.Archives;
 using Swivel.Engines.Documents;
+using Swivel.Engines.Files;
 using Swivel.Engines.Images;
 using Swivel.Engines.Media;
 using Swivel.Engines.Pdf;
@@ -17,10 +18,23 @@ namespace Swivel.App.Services;
 /// <summary>Where Swivel keeps things on disk.</summary>
 public static class AppPaths
 {
-    public static string Data { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Swivel");
+    private static readonly string? Override = Environment.GetEnvironmentVariable("SWIVEL_DATA_DIR") is { Length: > 0 } dir ? Path.GetFullPath(dir) : null;
+
+    /// <summary>
+    /// True when SWIVEL_DATA_DIR points Swivel at a private folder (UI tests, side-by-side builds).
+    /// Such an instance keeps its own mutex and pipe and leaves the Explorer menu and hotkeys alone.
+    /// </summary>
+    public static bool Isolated => Override != null;
+
+    public static string Data { get; } = Override ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Swivel");
     public static string Settings { get; } = Path.Combine(Data, "settings.json");
     public static string History { get; } = Path.Combine(Data, "history.db");
-    public static string Logs { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Swivel", "logs");
+    public static string Logs { get; } = Override != null ? Path.Combine(Override, "logs")
+        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Swivel", "logs");
+
+    /// <summary>Names the single-instance mutex and the hand-off pipe.</summary>
+    public static string InstanceName { get; } = Override is null ? $"Swivel-{Environment.UserName}"
+        : $"Swivel-{Environment.UserName}-{Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(Override.ToLowerInvariant())))[..12]}";
 
     /// <summary>Virtual files dragged from browsers and Outlook are written here before conversion.</summary>
     public static string Drops { get; } = Path.Combine(Path.GetTempPath(), "Swivel", "drops");
@@ -46,12 +60,13 @@ public sealed class SwivelServices : IAsyncDisposable
         Settings = new SettingsStore(AppPaths.Settings);
         Settings.LoadFailed += ex => Log.Warning(ex, "settings.json couldn't be read; keeping the previous settings");
         Settings.StartWatching();
-        Catalog = new OperationCatalog();
+        Catalog = OperationCatalog.FromSettings(Settings.Current);
+        Settings.Changed += settings => Catalog = OperationCatalog.FromSettings(settings);
         History = new HistoryStore(AppPaths.History);
         _queue = new JobQueue(
             [
                 new ImageEngine(), new ActionEngine(ui), new MediaEngine(), new DocumentEngine(),
-                new OfficeEngine(), new PdfEngine(), new ArchiveEngine(),
+                new OfficeEngine(), new PdfEngine(), new ArchiveEngine(), new TransferEngine(),
             ],
             OutputDirectoryFor);
         _queue.GroupCompleted += OnGroupCompleted;
@@ -60,7 +75,8 @@ public sealed class SwivelServices : IAsyncDisposable
     }
 
     public SettingsStore Settings { get; }
-    public OperationCatalog Catalog { get; }
+    /// <summary>Rebuilt when settings change (presets, pinned folders).</summary>
+    public OperationCatalog Catalog { get; private set; }
     public HistoryStore History { get; }
 
     /// <summary>Raised on the UI thread once a group has been recorded in history.</summary>

@@ -67,4 +67,109 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <!-- Chip: a toggle in the button's shape; on = ink with sunflower text, like an active wedge. -->
+    <Style x:Key="SwivelChip" TargetType="ToggleButton">
+        <Setter Property="Foreground" Value="{StaticResource Ink}" />
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+        <Setter Property="FontWeight" Value="ExtraBold" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="10,5" />
+        <Setter Property="Margin" Value="0,0,8,8" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Grid>
+                        <Border x:Name="Shadow" Background="{StaticResource Ink}" CornerRadius="10" Margin="3,3,-3,-3" />
+                        <Border x:Name="Face" Background="{StaticResource Paper}" BorderBrush="{StaticResource Ink}"
+                                BorderThickness="2.5" CornerRadius="10" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter x:Name="Text" HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{StaticResource Ink}" />
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource Sunflower}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource Ink}" />
+                            <Setter TargetName="Text" Property="TextElement.Foreground" Value="{StaticResource Sunflower}" />
+                            <Setter TargetName="Shadow" Property="Background" Value="{StaticResource Pink}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Field: mono text on paper inside a 2.5 px ink outline. -->
+    <Style x:Key="SwivelField" TargetType="TextBox">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="{StaticResource Ink}" />
+        <Setter Property="Background" Value="{StaticResource Paper}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Ink}" />
+        <Setter Property="BorderThickness" Value="2.5" />
+        <Setter Property="Padding" Value="6,4" />
+        <Setter Property="CaretBrush" Value="{StaticResource Ink}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border x:Name="Box" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
+                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Box" Property="Background" Value="{StaticResource Cream}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Slider: a thick ink track and a chunky sunflower thumb with a hard shadow. -->
+    <Style x:Key="SwivelSliderThumb" TargetType="Thumb">
+        <Setter Property="Width" Value="22" />
+        <Setter Property="Height" Value="22" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Grid>
+                        <Border Background="{StaticResource Ink}" CornerRadius="6" Margin="3,3,-3,-3" />
+                        <Border x:Name="Face" Background="{StaticResource Sunflower}" BorderBrush="{StaticResource Ink}" BorderThickness="2.5" CornerRadius="6" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsDragging" Value="True">
+                            <Setter TargetName="Face" Property="Background" Value="{StaticResource Pink}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="SwivelSlider" TargetType="Slider">
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Slider">
+                    <Grid>
+                        <Border Height="8" CornerRadius="4" Background="{StaticResource Cream}" BorderBrush="{StaticResource Ink}" BorderThickness="2" VerticalAlignment="Center" />
+                        <Track x:Name="PART_Track">
+                            <Track.Thumb>
+                                <Thumb Style="{StaticResource SwivelSliderThumb}" />
+                            </Track.Thumb>
+                        </Track>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="SwivelPrimaryButton" TargetType="Button" BasedOn="{StaticResource SwivelButton}">
+        <Setter Property="Background" Value="{StaticResource Sunflower}" />
+    </Style>
 </ResourceDictionary>

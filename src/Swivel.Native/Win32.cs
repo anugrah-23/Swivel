@@ -91,6 +91,41 @@ public static partial class Win32
     [LibraryImport("user32.dll")]
     public static partial uint GetWindowThreadProcessId(nint hwnd, out uint processId);
 
+    public const uint MOD_ALT = 0x1, MOD_CONTROL = 0x2, MOD_SHIFT = 0x4, MOD_WIN = 0x8, MOD_NOREPEAT = 0x4000;
+    public const int WM_HOTKEY = 0x0312;
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool RegisterHotKey(nint hwnd, int id, uint modifiers, uint vk);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool UnregisterHotKey(nint hwnd, int id);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetForegroundWindow(nint hwnd);
+
+    [LibraryImport("user32.dll")]
+    private static partial void keybd_event(byte vk, byte scan, uint flags, nuint extra);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool GetWindowRect(nint hwnd, out RECT rect);
+
+    /// <summary>
+    /// Brings a Swivel panel to the front. Windows only lets the process that had the last input do
+    /// that, so a harmless Alt press and release is sent first, the documented workaround.
+    /// </summary>
+    public static void ForceForeground(nint hwnd)
+    {
+        if (SetForegroundWindow(hwnd)) return;
+        const uint KEYEVENTF_KEYUP = 0x2;
+        keybd_event((byte)VK_LMENU, 0, 0, 0);
+        keybd_event((byte)VK_LMENU, 0, KEYEVENTF_KEYUP, 0);
+        SetForegroundWindow(hwnd);
+    }
+
     /// <summary>True while the primary mouse button is held, honouring swapped buttons.</summary>
     public static bool PrimaryButtonDown()
     {

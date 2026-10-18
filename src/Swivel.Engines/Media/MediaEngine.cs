@@ -30,8 +30,20 @@ public sealed class MediaEngine : IEngine
         if (wantsVideo && !info.HasVideo) throw new JobException($"{Path.GetFileName(input)} has no video in it.");
         if (!wantsVideo && !info.HasAudio && op.Id != "video.mute") throw new JobException($"{Path.GetFileName(input)} has no sound in it.");
 
-        var args = new List<string> { "-hide_banner", "-nostdin", "-y", "-i", input };
+        var args = new List<string> { "-hide_banner", "-nostdin", "-y" };
+        double duration = info.Duration;
+        if (op.Id == "media.trim")
+        {
+            // Seeking before -i is fast; with stream copy the cut snaps to the nearest keyframe.
+            double start = Seconds(op.Parameter("start", "0")), end = Seconds(op.Parameter("end", "0"));
+            if (end <= 0 || end > info.Duration) end = info.Duration;
+            if (end - start < 0.1) throw new JobException("That trim leaves nothing behind.");
+            args.AddRange(["-ss", Fmt(start), "-to", Fmt(end)]);
+            duration = end - start;
+        }
+        args.AddRange(["-i", input]);
         args.AddRange(await ArgumentsFor(op, target, info));
+        info = info with { Duration = duration };
         args.AddRange(["-progress", "pipe:1", "-nostats"]);
 
         if (op.OutputIsFolder)
@@ -71,6 +83,10 @@ public sealed class MediaEngine : IEngine
                 return ["-map", "0:v?", "-map", "0:a?", "-c", "copy", "-f", "matroska"];
             case "media.compress":
                 return info.HasVideo ? await VideoArgs(target, info, compress: true) : AudioArgs(target, compress: true);
+            case "media.trim" when op.Parameter("exact", "false") == "true":
+                return info.HasVideo ? await VideoArgs(target, info, compress: false) : AudioArgs(target, compress: false);
+            case "media.trim":
+                return ["-map", "0", "-c", "copy", "-avoid_negative_ts", "make_zero", "-f", Muxer(target)];
         }
         return FileKinds.Family(target) == FileFamily.Video ? await VideoArgs(target, info, compress: false) : AudioArgs(target, compress: false);
     }
@@ -139,6 +155,11 @@ public sealed class MediaEngine : IEngine
         long bps = (long)(Math.Max(width, 16) * Math.Max(height, 16) * rate * bitsPerPixel);
         return Math.Clamp(bps, 400_000, 12_000_000);
     }
+
+    private static double Seconds(string text) =>
+        double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out double s) ? Math.Max(0, s) : 0;
+
+    private static string Fmt(double seconds) => seconds.ToString("0.###", CultureInfo.InvariantCulture);
 
     private static string Muxer(FileKind kind) => kind switch
     {

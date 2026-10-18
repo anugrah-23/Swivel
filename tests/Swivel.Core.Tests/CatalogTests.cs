@@ -72,7 +72,7 @@ public class CatalogTests
     [Fact]
     public void Small_lists_fit_one_ring_without_more()
     {
-        var rings = OperationCatalog.Rings(_catalog.For([FileKind.Jpeg], WheelMode.Tools));
+        var rings = OperationCatalog.Rings(_catalog.For([FileKind.Pdf], WheelMode.Tools));
         Assert.Single(rings);
         Assert.DoesNotContain(null, rings[0]);
     }

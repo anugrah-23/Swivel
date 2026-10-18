@@ -9,6 +9,7 @@ public sealed class JobGroup
     private readonly double[] _progress;
     private readonly List<string> _outputs = [];
     private readonly List<JobFailure> _failures = [];
+    private readonly Dictionary<string, string> _sources = [];
     private readonly TaskCompletionSource<JobGroupResult> _completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly CancellationTokenSource _cancel = new();
     private int _remaining;
@@ -48,17 +49,24 @@ public sealed class JobGroup
         ProgressChanged?.Invoke(this);
     }
 
-    internal JobGroupResult? Finish(int index, string? output, JobFailure? failure, bool cancelled)
+    internal JobGroupResult? Finish(int index, string? output, string source, JobFailure? failure, bool cancelled)
     {
         JobGroupResult? result = null;
         lock (_lock)
         {
             _progress[index] = 1;
-            if (output != null) _outputs.Add(output);
+            if (output != null)
+            {
+                _outputs.Add(output);
+                _sources[output] = source;
+            }
             if (failure != null) _failures.Add(failure);
             _anyCancelled |= cancelled;
             if (--_remaining == 0)
-                result = new JobGroupResult(Id, Operation, Inputs, [.. _outputs], [.. _failures], _anyCancelled, Started, DateTimeOffset.Now);
+                result = new JobGroupResult(Id, Operation, Inputs, [.. _outputs], [.. _failures], _anyCancelled, Started, DateTimeOffset.Now)
+                {
+                    Sources = new Dictionary<string, string>(_sources),
+                };
         }
         ProgressChanged?.Invoke(this);
         if (result != null) _completion.TrySetResult(result);

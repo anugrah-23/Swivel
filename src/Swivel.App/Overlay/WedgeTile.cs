@@ -96,6 +96,28 @@ internal sealed class WedgeTile : Grid
         ApplyFill();
     }
 
+    /// <summary>Raised when assistive technology (or a UI test) invokes this wedge.</summary>
+    public event Action? Invoked;
+
+    protected override System.Windows.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new Peer(this);
+
+    /// <summary>Exposes the wedge as a button with its spoken name ("Convert to WEBP, smaller").</summary>
+    private sealed class Peer(WedgeTile tile) : System.Windows.Automation.Peers.FrameworkElementAutomationPeer(tile),
+        System.Windows.Automation.Provider.IInvokeProvider
+    {
+        protected override System.Windows.Automation.Peers.AutomationControlType GetAutomationControlTypeCore() =>
+            System.Windows.Automation.Peers.AutomationControlType.Button;
+
+        protected override string GetClassNameCore() => "SwivelWedge";
+
+        protected override bool IsOffscreenCore() => tile.Visibility != Visibility.Visible || string.IsNullOrEmpty(GetName());
+
+        public override object? GetPattern(System.Windows.Automation.Peers.PatternInterface pattern) =>
+            pattern == System.Windows.Automation.Peers.PatternInterface.Invoke ? this : base.GetPattern(pattern);
+
+        public void Invoke() => tile.Invoked?.Invoke();
+    }
+
     public void SetActive(bool active)
     {
         if (_active == active) return;

@@ -51,6 +51,11 @@ public static class Voice
             case "tool.compress" or "media.compress" or "pdf.compress": return n == 1 ? "Boom. Squished." : $"Boom. Squished, all {n}.";
             case "tool.rotate-right" or "tool.rotate-left": return n == 1 ? "Boom. Turned." : $"Boom. Turned, all {n}.";
             case "tool.strip": return n == 1 ? "Boom. Scrubbed clean." : $"Boom. Scrubbed clean, all {n}.";
+            case "tool.resize": return n == 1 ? "Boom. Resized." : $"Boom. Resized, all {n}.";
+            case "tool.crop": return n == 1 ? "Boom. Cropped." : $"Boom. Cropped, all {n}.";
+            case "media.trim": return "Boom. Trimmed.";
+            case var id when id.StartsWith("action.move", StringComparison.Ordinal): return n == 1 ? "Moved." : $"Moved {n}.";
+            case var id when id.StartsWith("action.copy-to", StringComparison.Ordinal): return n == 1 ? "Copied." : $"Copied {n}.";
         }
         if (op.Engine == Operation.Engines.Archive) return $"Boom. Packed into a {FormatName(op.OutputKind)}.";
 
@@ -61,6 +66,7 @@ public static class Voice
     public static string Action(Operation op, int count) => op.Id switch
     {
         "action.copy-path" => count == 1 ? "Path's on your clipboard." : $"{count} paths on your clipboard.",
+        "action.copy-file" => count == 1 ? "Paste it anywhere." : $"{count} files ready to paste.",
         _ => "Done.",
     };
 

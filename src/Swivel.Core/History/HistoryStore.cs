@@ -4,7 +4,12 @@ using Swivel.Core.Jobs;
 
 namespace Swivel.Core.History;
 
-public sealed record OutputStamp(string Path, long Size, long LastWriteUtcTicks);
+/// <summary>An output as Swivel wrote it; <paramref name="Source"/> is the input it came from.</summary>
+public sealed record OutputStamp(string Path, long Size, long LastWriteUtcTicks, string? Source = null)
+{
+    public bool SameContentAs(OutputStamp other) =>
+        string.Equals(Path, other.Path, StringComparison.OrdinalIgnoreCase) && Size == other.Size && LastWriteUtcTicks == other.LastWriteUtcTicks;
+}
 
 public sealed record HistoryEntry(
     Guid GroupId,
@@ -58,7 +63,9 @@ public sealed class HistoryStore
     /// <summary>Stores a finished group and bumps the operation's usage rank.</summary>
     public HistoryEntry Record(JobGroupResult result)
     {
-        var stamps = result.Outputs.Where(Exists).Select(Stamp).ToArray();
+        var stamps = result.Outputs.Where(Exists)
+            .Select(o => Stamp(o) with { Source = result.Sources.GetValueOrDefault(o) })
+            .ToArray();
         long before = result.Inputs.Sum(SizeOf);
         long after = stamps.Sum(s => s.Size);
         var entry = new HistoryEntry(result.GroupId, result.Operation.Id, result.Operation.Label, result.Finished,
@@ -121,14 +128,25 @@ public sealed class HistoryStore
     /// <summary>True while every remaining output is still exactly what Swivel wrote.</summary>
     public bool CanUndo(Guid groupId) => Check(Find(groupId), out _) == UndoResult.Done;
 
-    /// <summary>Recycles the group's outputs, but only if none were changed since Swivel wrote them.</summary>
+    /// <summary>
+    /// Recycles the group's outputs, but only if none were changed since Swivel wrote them. A Move is
+    /// undone by moving each item back to where it came from instead.
+    /// </summary>
     public UndoResult Undo(Guid groupId, IRecycler recycler)
     {
         var entry = Find(groupId);
         var status = Check(entry, out var existing);
         if (status != UndoResult.Done) return status;
 
-        recycler.Recycle(existing.Select(s => s.Path).ToArray());
+        if (entry!.OperationId.StartsWith("action.move", StringComparison.Ordinal))
+        {
+            if (existing.Any(o => o.Source is null || Files.FileOps.Exists(o.Source))) return UndoResult.OutputsChanged;
+            foreach (var output in existing) Files.FileOps.Move(output.Path, output.Source!);
+        }
+        else
+        {
+            recycler.Recycle(existing.Select(s => s.Path).ToArray());
+        }
         using var db = Open();
         Execute(db, "UPDATE groups SET undone = 1 WHERE id = $id", ("$id", groupId.ToString()));
         return UndoResult.Done;
@@ -141,7 +159,7 @@ public sealed class HistoryStore
         if (entry.Undone) return UndoResult.AlreadyUndone;
         existing = entry.Outputs.Where(o => Exists(o.Path)).ToArray();
         if (existing.Count == 0) return UndoResult.NothingToUndo;
-        return existing.All(o => Stamp(o.Path) == o) ? UndoResult.Done : UndoResult.OutputsChanged;
+        return existing.All(o => Stamp(o.Path).SameContentAs(o)) ? UndoResult.Done : UndoResult.OutputsChanged;
     }
 
     private static bool Exists(string path) => File.Exists(path) || Directory.Exists(path);

@@ -112,7 +112,7 @@ public sealed class Fixtures : IDisposable
     public static IEngine[] AllEngines() =>
     [
         new ImageEngine(), new Media.MediaEngine(), new Documents.DocumentEngine(), new Documents.OfficeEngine(),
-        new Pdf.PdfEngine(), new Archives.ArchiveEngine(),
+        new Pdf.PdfEngine(), new Archives.ArchiveEngine(), new Files.TransferEngine(),
     ];
 
     public static async Task<JobGroupResult> Run(Operation operation, params string[] inputs)

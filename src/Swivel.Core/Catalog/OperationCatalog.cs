@@ -97,10 +97,13 @@ public sealed class OperationCatalog
         {
             Parameters = P(("strip", "true")),
         },
+        new("tool.resize", WheelMode.Tools, "Resize", "Fit", Rotatable, null, Engines.Image) { Panel = "resize" },
+        new("tool.crop", WheelMode.Tools, "Crop", "Smart", Rotatable, null, Engines.Image) { Panel = "crop" },
         new("image.combine-pdf", WheelMode.Tools, "Combine", "One PDF", RasterIn, ".pdf", Engines.Pdf)
         {
             CombinesInputs = true, MinInputs = 2, OutputSuffix = " combined",
         },
+        new("media.trim", WheelMode.Tools, "Trim", "Cut", Media, null, Engines.Media) { Heavy = true, Panel = "trim", MaxInputs = 1 },
 
         // ---- Tools: audio and video
         new("media.compress", WheelMode.Tools, "Compress", "Lighter", Media, null, Engines.Media) { Heavy = true },
@@ -126,13 +129,44 @@ public sealed class OperationCatalog
 
         // ---- Actions
         new("action.copy-path", WheelMode.Actions, "Copy path", "Paste", Anything, null, Engines.Action),
+        new("action.copy-file", WheelMode.Actions, "Copy file", "Clipboard", Anything, null, Engines.Action),
+        new("action.move-to", WheelMode.Actions, "Move to", "Folder…", Anything, null, Engines.Transfer) { Panel = "folder", MovesInput = true },
+        new("action.copy-to", WheelMode.Actions, "Copy to", "Folder…", Anything, null, Engines.Transfer) { Panel = "folder" },
         new("action.reveal", WheelMode.Actions, "Reveal", "Explorer", Anything, null, Engines.Action),
+        new("action.share", WheelMode.Actions, "Share", "Nearby", AnyFile, null, Engines.Action),
+        new("action.float", WheelMode.Actions, "Float", "Pin", Anything, null, Engines.Action),
+        new("action.terminal", WheelMode.Actions, "Terminal", "Here", Anything, null, Engines.Action),
     ];
 
     private readonly IReadOnlyList<Operation> _operations;
 
-    public OperationCatalog(IEnumerable<Operation>? presets = null) =>
-        _operations = [.. BuiltIn, .. presets ?? []];
+    public OperationCatalog(IEnumerable<Operation>? extra = null) =>
+        _operations = [.. BuiltIn, .. extra ?? []];
+
+    /// <summary>The built-in table plus the user's presets and a Move/Copy wedge per pinned folder.</summary>
+    public static OperationCatalog FromSettings(Settings.AppSettings settings)
+    {
+        var extra = new List<Operation>();
+        foreach (var preset in settings.Presets)
+        {
+            if (BuiltIn.FirstOrDefault(o => o.Id == preset.Base) is not { } baseOp || baseOp.NeedsPanel) continue;
+            extra.Add(baseOp.WithParameters(preset.Parameters) with
+            {
+                Id = "preset.user." + preset.Id,
+                Label = preset.Label.ToUpperInvariant(),
+                Hint = preset.Hint,
+            });
+        }
+        for (int i = 0; i < settings.PinnedFolders.Count; i++)
+        {
+            string folder = settings.PinnedFolders[i];
+            string name = Path.GetFileName(folder.TrimEnd('\\', '/')) is { Length: > 0 } n ? n : folder;
+            var target = P(("target", folder));
+            extra.Add(new($"action.move-to:{i}", WheelMode.Actions, "Move", name, Anything, null, Engines.Transfer) { Parameters = target, MovesInput = true });
+            extra.Add(new($"action.copy-to:{i}", WheelMode.Actions, "Copy", name, Anything, null, Engines.Transfer) { Parameters = target });
+        }
+        return new OperationCatalog(extra);
+    }
 
     public Operation? Find(string id) => _operations.FirstOrDefault(o => o.Id == id);
 

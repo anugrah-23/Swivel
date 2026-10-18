@@ -1,5 +1,6 @@
 using System.Threading.Channels;
 using Swivel.Core.Catalog;
+using Swivel.Core.Files;
 
 namespace Swivel.Core.Jobs;
 
@@ -84,9 +85,12 @@ public sealed class JobQueue : IAsyncDisposable
             if (!operation.ProducesNoOutput)
             {
                 string input = inputs[0];
-                string directory = _outputDirectory(input);
+                // Copy to / Move to name their own folder; everything else follows the output rule.
+                string directory = operation.Parameter("target", "") is { Length: > 0 } target ? target : _outputDirectory(input);
                 Directory.CreateDirectory(directory);
-                string extension = operation.OutputIsFolder ? "" : operation.OutputExtension ?? Path.GetExtension(input);
+                bool folderInput = Directory.Exists(input) && !operation.CombinesInputs;
+                string extension = operation.OutputIsFolder ? ""
+                    : operation.OutputExtension ?? (folderInput ? "" : Path.GetExtension(input));
                 string stem = OutputNamer.StemFor(inputs, operation.CombinesInputs) + operation.OutputSuffix;
                 output = _namer.Reserve(directory, stem, extension);
             }
@@ -100,16 +104,9 @@ public sealed class JobQueue : IAsyncDisposable
             if (output != null && temp != null)
             {
                 // Folders and files are both renamed into place in one step.
-                if (operation.OutputIsFolder)
-                {
-                    if (!Directory.Exists(temp)) throw new JobException("The engine finished without writing anything.");
-                    Directory.Move(temp, output);
-                }
-                else
-                {
-                    if (!File.Exists(temp)) throw new JobException("The engine finished without writing a file.");
-                    File.Move(temp, output, overwrite: false);
-                }
+                if (Directory.Exists(temp)) Directory.Move(temp, output);
+                else if (File.Exists(temp)) File.Move(temp, output, overwrite: false);
+                else throw new JobException("The engine finished without writing anything.");
                 temp = null;
             }
         }
@@ -126,13 +123,27 @@ public sealed class JobQueue : IAsyncDisposable
         }
         finally
         {
-            if (temp != null) TryDelete(temp);
+            if (temp != null)
+            {
+                // A move that didn't finish puts the original back where it was; anything else is scratch.
+                if (operation.MovesInput && FileOps.Exists(temp) && !FileOps.Exists(inputs[0])) TryRestore(temp, inputs[0]);
+                else TryDelete(temp);
+            }
             if (output != null) _namer.Release(output);
         }
 
         bool produced = output != null && failure == null && !cancelled;
-        var result = group.Finish(index, produced ? output : null, failure, cancelled);
+        var result = group.Finish(index, produced ? output : null, inputs[0], failure, cancelled);
         if (result != null) GroupCompleted?.Invoke(result);
+    }
+
+    private static void TryRestore(string temp, string original)
+    {
+        try { FileOps.Move(temp, original); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Leave it under its temp name rather than delete the only copy.
+        }
     }
 
     private static void TryDelete(string path)

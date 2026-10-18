@@ -27,13 +27,35 @@ public sealed class JobFeedback
         services.GroupFinished += OnFinished;
     }
 
-    public void OnDrop(WheelDrop drop)
+    public async void OnDrop(WheelDrop drop)
     {
-        var group = _services.Submit(drop.Operation, drop.Files);
-        if (drop.Operation.ProducesNoOutput) return;
+        var operation = drop.Operation;
+        if (operation.NeedsPanel)
+        {
+            // Trim, Crop, Resize and Copy/Move to ask a question first; cancelling does nothing at all.
+            var answer = await PanelWindow.AskAsync(operation, drop.Files, drop.ScreenCentre);
+            if (answer is null) return;
+            operation = operation.WithParameters(answer);
+        }
+
+        JobGroup group;
+        try
+        {
+            group = _services.Submit(operation, drop.Files);
+        }
+        catch (ArgumentException ex)
+        {
+            Info("Not that one.", ex.Message);
+            return;
+        }
+        if (operation.ProducesNoOutput) return;
         _ = new ProgressPill(group, drop.ScreenCentre, drop.Scale, _running++);
-        group.Completion.ContinueWith(_ => Interlocked.Decrement(ref _running), TaskScheduler.Default);
+        _ = group.Completion.ContinueWith(_ => Interlocked.Decrement(ref _running), TaskScheduler.Default);
     }
+
+    /// <summary>A short paper toast for things that aren't job results ("Select files first").</summary>
+    public void Info(string title, string body) =>
+        _toasts.Show(new Toast(ToastKind.Info, title, body, null, [], BlipLife * 1.6));
 
     private void OnFinished(JobGroupResult result, HistoryEntry? entry)
     {
@@ -42,7 +64,7 @@ public sealed class JobFeedback
         if (op.ProducesNoOutput)
         {
             if (result.Failures.Count > 0) ShowFailure(result);
-            else if (op.Id == "action.copy-path")
+            else if (op.Id is "action.copy-path" or "action.copy-file")
                 _toasts.Show(new Toast(ToastKind.Info, "Copied.", Voice.Action(op, result.Inputs.Count), null, [], BlipLife));
             return;
         }

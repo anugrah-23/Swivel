@@ -43,6 +43,9 @@ public partial class OverlayWindow : Window
     private Win32.RECT _target;
     private double _scale = 1;
     private bool _open, _dragInside, _dropping;
+
+    /// <summary>Opened by a hotkey or the Explorer menu: no drag, so wedges apply on click or Enter.</summary>
+    private bool _keyboardMode;
     private WheelMode _mode;
     private int _ring;
     private int _active = -1;
@@ -67,6 +70,8 @@ public partial class OverlayWindow : Window
             Canvas.SetTop(tile, CentreY - RingRadius * Math.Cos(angle) - WedgeTile.TileHeight / 2);
             Ring.Children.Add(tile);
             _tiles[i] = tile;
+            int index = i;
+            tile.Invoked += () => { if (_open && !_dropping && _session != null) Apply(index); };
         }
         RimArc.Data = BuildRimArc();
         Pill.SizeChanged += (_, _) => CentrePill();
@@ -83,8 +88,41 @@ public partial class OverlayWindow : Window
         Root.DragOver += OnDragOver;
         Root.DragLeave += OnDragLeave;
         Root.Drop += OnDrop;
+        Root.MouseMove += (_, e) => { if (_keyboardMode && _open && !_dropping && HitTest(e.GetPosition(Root)) is >= 0 and var w) Highlight(w); };
+        Root.MouseLeftButtonUp += OnClick;
 
         ShowRing();
+    }
+
+    /// <summary>Opens the wheel for files picked without a drag (selection hotkey, clipboard, Explorer menu).</summary>
+    public void OpenFor(IReadOnlyList<string> paths)
+    {
+        if (paths.Count == 0) return;
+        if (_open) Dismiss();
+        Open(Stopwatch.GetTimestamp(), keyboard: true);
+        StartSession(new DataObject(DataFormats.FileDrop, paths.ToArray()));
+        Highlight(CurrentRing().Count > 0 ? 0 : -1);
+    }
+
+    private void OnClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (!_keyboardMode || !_open || _dropping) return;
+        int wedge = HitTest(e.GetPosition(Root));
+        if (wedge < 0) Dismiss();
+        else Apply(wedge);
+    }
+
+    /// <summary>Applies a wedge chosen by click, Enter or UI Automation (More moves to the next ring).</summary>
+    private void Apply(int wedge)
+    {
+        if (IsMore(wedge))
+        {
+            NextRing();
+            return;
+        }
+        if (_session?.Paths is not { Count: > 0 } paths || wedge >= CurrentRing().Count) return;
+        Highlight(wedge);
+        Commit(CurrentRing()[wedge]!, paths);
     }
 
     /// <summary>Raised on the UI thread when the user lets go on a wedge.</summary>
@@ -116,8 +154,7 @@ public partial class OverlayWindow : Window
                 Step(+1);
                 break;
             case HookSignal.Enter when _open && !_dragInside && !_dropping && _active >= 0:
-                if (IsMore(_active)) NextRing();
-                else if (_session?.Paths is { Count: > 0 } paths) Commit(CurrentRing()[_active]!, paths);
+                Apply(_active);
                 break;
             case HookSignal.Escape when _open:
                 Log.Debug("Wheel cancelled with Esc");
@@ -177,9 +214,10 @@ public partial class OverlayWindow : Window
         Win32.SetWindowLongPtr(_hwnd, Win32.GWL_EXSTYLE, style | Win32.WS_EX_NOACTIVATE | Win32.WS_EX_TOOLWINDOW);
     }
 
-    private void Open(long timestamp)
+    private void Open(long timestamp, bool keyboard = false)
     {
         _openedAt = timestamp;
+        _keyboardMode = keyboard;
         Win32.GetCursorPos(out var cursor);
         var (work, scale) = Win32.MonitorAt(cursor);
         _scale = scale;
@@ -240,10 +278,20 @@ public partial class OverlayWindow : Window
         UpdateHints();
     }
 
-    /// <summary>Closes silently when the button is released without a drag ever reaching the wheel.</summary>
+    /// <summary>
+    /// Closes silently when the button is released without a drag ever reaching the wheel, or, in
+    /// keyboard mode, when the user clicks somewhere else.
+    /// </summary>
     private void OnReleasePoll(object? sender, EventArgs e)
     {
         if (!_open) { _releasePoll.Stop(); return; }
+        if (_keyboardMode)
+        {
+            if (!_dropping && Win32.PrimaryButtonDown() && Win32.GetCursorPos(out var p)
+                && (p.X < _target.Left || p.X > _target.Right || p.Y < _target.Top || p.Y > _target.Bottom))
+                Dismiss();
+            return;
+        }
         if (!_dragInside && !_dropping && !Win32.PrimaryButtonDown())
         {
             Log.Debug("Wheel closed: button released without a drop");
@@ -508,7 +556,7 @@ public partial class OverlayWindow : Window
         {
             CardTitle.Text = _mode.ToString().ToUpperInvariant();
             CardDetail.Text = _session == null ? "Bring a file in." : ring.Count == 0 ? "Nothing here fits these files." : "Hover a wedge to preview it.";
-            CardCta.Text = "Let go off the wheel to cancel";
+            CardCta.Text = _keyboardMode ? "Click away or press Esc to cancel" : "Let go off the wheel to cancel";
             return;
         }
 
@@ -524,7 +572,7 @@ public partial class OverlayWindow : Window
             : op.Mode == WheelMode.Convert ? $"TO {op.Label}"
             : op.Label.ToUpperInvariant();
         CardDetail.Text = Describe(op);
-        CardCta.Text = "Let go to apply";
+        CardCta.Text = _keyboardMode ? "Click or press Enter to apply" : "Let go to apply";
     }
 
     private string Describe(Operation op)
@@ -624,7 +672,7 @@ public partial class OverlayWindow : Window
 
     private void UpdateHints()
     {
-        string hints = $"{TriggerKeys.Label(_services.Settings.Current.Trigger)} mode   ← → pick   Esc cancel";
+        string hints = $"{TriggerKeys.Label(_services.Settings.Current.Trigger)} mode   ← → pick   {(_keyboardMode ? "Enter apply   " : "")}Esc cancel";
 #if DEBUG
         if (_lastOpenMs is double ms) hints += $"   · {ms:F0} ms";
 #endif

@@ -44,6 +44,31 @@ public sealed class ImageEngine : IEngine
             if (int.TryParse(operation.Parameter("maxSize", ""), out int max) && Math.Max(image.Width, image.Height) > max)
                 image = Own(image.ThumbnailImage(max, height: max, size: Enums.Size.Down));
 
+            // Resize panel: a scale ("0.5"), a longest side ("1920"), or width and/or height in pixels
+            // (0 = follow the other side). Each image in a batch keeps its own shape.
+            int.TryParse(operation.Parameter("width", "0"), out int width);
+            int.TryParse(operation.Parameter("height", "0"), out int height);
+            if (double.TryParse(operation.Parameter("scale", ""), System.Globalization.CultureInfo.InvariantCulture, out double scale) && scale > 0)
+                width = Math.Max(1, (int)Math.Round(image.Width * scale));
+            if (int.TryParse(operation.Parameter("longest", ""), out int longest) && longest > 0)
+                (width, height) = image.Width >= image.Height ? (longest, 0) : (0, longest);
+            if (width > 0 || height > 0)
+            {
+                if (width <= 0) width = (int)Math.Round(image.Width * (double)height / image.Height);
+                if (height <= 0) height = (int)Math.Round(image.Height * (double)width / image.Width);
+                image = Own(image.ThumbnailImage(width, height: height, size: Enums.Size.Force));
+            }
+
+            // Crop panel: an aspect such as "16:9", cut where the interesting part of the picture is.
+            if (ParseAspect(operation.Parameter("aspect", "")) is double aspect)
+            {
+                (int cw, int ch) = image.Width / (double)image.Height > aspect
+                    ? ((int)Math.Round(image.Height * aspect), image.Height)
+                    : (image.Width, (int)Math.Round(image.Width / aspect));
+                if (cw < image.Width || ch < image.Height)
+                    image = Own(image.Smartcrop(Math.Max(1, cw), Math.Max(1, ch), interesting: Enums.Interesting.Attention));
+            }
+
             image = operation.Parameter("rotate", "") switch
             {
                 "90" => Own(image.Rot(Enums.Angle.D90)),
@@ -70,6 +95,14 @@ public sealed class ImageEngine : IEngine
         {
             foreach (var image in owned) image.Dispose();
         }
+    }
+
+    private static double? ParseAspect(string text)
+    {
+        var parts = text.Split(':');
+        return parts.Length == 2 && double.TryParse(parts[0], System.Globalization.CultureInfo.InvariantCulture, out double w)
+            && double.TryParse(parts[1], System.Globalization.CultureInfo.InvariantCulture, out double h) && w > 0 && h > 0
+            ? w / h : null;
     }
 
     internal static VipsImage Load(string path, FileKind kind)

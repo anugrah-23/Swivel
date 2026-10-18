@@ -27,13 +27,20 @@ public sealed class SingleInstance : IDisposable
     /// <summary>Raised on a pool thread with one gathered batch of paths.</summary>
     public event Action<IReadOnlyList<string>>? WheelRequested;
 
-    /// <summary>Returns the instance if this is the first Swivel, or null after handing <paramref name="paths"/> on.</summary>
-    public static SingleInstance? Claim(IReadOnlyList<string> paths)
+    /// <summary>Raised on a pool thread when Swivel is launched again with nothing to open (a shortcut).</summary>
+    public event Action? ShowRequested;
+
+    /// <summary>
+    /// Returns the instance if this is the first Swivel, or null after handing <paramref name="paths"/>
+    /// on. A plain second launch (desktop or Start shortcut) sends an empty list, which asks the
+    /// running Swivel to show itself; launches at sign-in (--background) send nothing.
+    /// </summary>
+    public static SingleInstance? Claim(IReadOnlyList<string> paths, bool background)
     {
         var mutex = new Mutex(true, @"Local\" + AppPaths.InstanceName, out bool first);
         if (first) return new SingleInstance(mutex);
         mutex.Dispose();
-        if (paths.Count > 0) Send(paths);
+        if (paths.Count > 0 || !background) Send(paths);
         return null;
     }
 
@@ -63,7 +70,10 @@ public sealed class SingleInstance : IDisposable
                 await pipe.WaitForConnectionAsync(_stop.Token);
                 using var reader = new StreamReader(pipe);
                 if (await reader.ReadLineAsync(_stop.Token) is { } line && JsonSerializer.Deserialize<string[]>(line) is { } paths)
-                    Gather(paths);
+                {
+                    if (paths.Length == 0) ShowRequested?.Invoke();
+                    else Gather(paths);
+                }
             }
             catch (OperationCanceledException) { return; }
             catch (Exception ex)

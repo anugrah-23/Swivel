@@ -28,7 +28,7 @@ public partial class App : Application
         string[] wheelPaths = e.Args is ["--wheel", .. var rest] ? rest : [];
         if (!tool)
         {
-            _instance = SingleInstance.Claim(wheelPaths);
+            _instance = SingleInstance.Claim(wheelPaths, background: e.Args.Contains("--background"));
             if (_instance is null)
             {
                 Shutdown();
@@ -95,6 +95,7 @@ public partial class App : Application
         Apply(_services.Settings.Current);
 
         _instance!.WheelRequested += paths => Dispatcher.InvokeAsync(() => OpenWheel(paths, "Explorer menu"));
+        _instance.ShowRequested += () => Dispatcher.InvokeAsync(OpenSettings);
         _instance.Listen();
         if (wheelPaths.Length > 0) _instance.Gather(wheelPaths);
 
@@ -116,6 +117,8 @@ public partial class App : Application
             _onboarding.Closed += (_, _) => _onboarding = null;
             _onboarding.Show();
         }
+        else if (!e.Args.Contains("--background") && wheelPaths.Length == 0 && !AppPaths.Isolated)
+            _feedback.Info("Swivel is on.", $"It lives in your tray. Drag a file and tap {TriggerKeys.Label(_state.Settings.Trigger)}.");
     }
 
     private DispatcherTimer? _updateTimer;

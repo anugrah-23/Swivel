@@ -53,6 +53,11 @@ public sealed class JobFeedback
         _ = group.Completion.ContinueWith(_ => Interlocked.Decrement(ref _running), TaskScheduler.Default);
     }
 
+    /// <summary>A toast with one action and a Later button (updates).</summary>
+    public void Offer(string title, string body, string action, Action run) =>
+        _toasts.Show(new Toast(ToastKind.Info, title, body, null,
+            [new ToastAction(action, _ => { run(); return true; }), new ToastAction("Later", _ => true)], TimeSpan.FromMinutes(5)));
+
     /// <summary>A short paper toast for things that aren't job results ("Select files first").</summary>
     public void Info(string title, string body) =>
         _toasts.Show(new Toast(ToastKind.Info, title, body, null, [], BlipLife * 1.6));

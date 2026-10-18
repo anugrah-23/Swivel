@@ -11,15 +11,9 @@
     <Color x:Key="OrangeColor">#FF8A3D</Color>
     <Color x:Key="LilacColor">#C9B8FF</Color>
 
-    <SolidColorBrush x:Key="Ink" Color="{StaticResource InkColor}" />
-    <SolidColorBrush x:Key="Cream" Color="{StaticResource CreamColor}" />
-    <SolidColorBrush x:Key="Paper" Color="{StaticResource PaperColor}" />
-    <SolidColorBrush x:Key="Sunflower" Color="{StaticResource SunflowerColor}" />
-    <SolidColorBrush x:Key="Pink" Color="{StaticResource PinkColor}" />
-    <SolidColorBrush x:Key="Sky" Color="{StaticResource SkyColor}" />
-    <SolidColorBrush x:Key="Mint" Color="{StaticResource MintColor}" />
-    <SolidColorBrush x:Key="Orange" Color="{StaticResource OrangeColor}" />
-    <SolidColorBrush x:Key="Lilac" Color="{StaticResource LilacColor}" />
+
+    <!-- Brushes (Ink, Cream, Paper, Sunflower…) are created in code from these colours at startup:
+         Palette.InstallBrushes, which swaps in system colours for high-contrast mode. -->
 
     <!-- Embedded under the SIL Open Font License; see licenses\ next to Swivel.exe. -->
     <FontFamily x:Key="DisplayFont">pack://application:,,,/Fonts/#Archivo, Archivo Black, Segoe UI Black</FontFamily>
@@ -28,8 +22,8 @@
 
     <!-- Chunky button: paper fill, 2.5 px ink outline, 3 px hard shadow that collapses on press. -->
     <Style x:Key="SwivelButton" TargetType="Button">
-        <Setter Property="Background" Value="{StaticResource Paper}" />
-        <Setter Property="Foreground" Value="{StaticResource Ink}" />
+        <Setter Property="Background" Value="{DynamicResource Paper}" />
+        <Setter Property="Foreground" Value="{DynamicResource Ink}" />
         <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
         <Setter Property="FontWeight" Value="ExtraBold" />
         <Setter Property="FontSize" Value="12" />
@@ -41,15 +35,15 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Grid>
-                        <Border x:Name="Shadow" Background="{StaticResource Ink}" CornerRadius="10" Margin="3,3,-3,-3" />
-                        <Border x:Name="Face" Background="{TemplateBinding Background}" BorderBrush="{StaticResource Ink}"
+                        <Border x:Name="Shadow" Background="{DynamicResource Ink}" CornerRadius="10" Margin="3,3,-3,-3" />
+                        <Border x:Name="Face" Background="{TemplateBinding Background}" BorderBrush="{DynamicResource Ink}"
                                 BorderThickness="2.5" CornerRadius="10" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Face" Property="Background" Value="{StaticResource Sunflower}" />
+                            <Setter TargetName="Face" Property="Background" Value="{DynamicResource Sunflower}" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="Face" Property="RenderTransform">
@@ -69,7 +63,7 @@
     </Style>
     <!-- Chip: a toggle in the button's shape; on = ink with sunflower text, like an active wedge. -->
     <Style x:Key="SwivelChip" TargetType="ToggleButton">
-        <Setter Property="Foreground" Value="{StaticResource Ink}" />
+        <Setter Property="Foreground" Value="{DynamicResource Ink}" />
         <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
         <Setter Property="FontWeight" Value="ExtraBold" />
         <Setter Property="FontSize" Value="12" />
@@ -80,20 +74,20 @@
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">
                     <Grid>
-                        <Border x:Name="Shadow" Background="{StaticResource Ink}" CornerRadius="10" Margin="3,3,-3,-3" />
-                        <Border x:Name="Face" Background="{StaticResource Paper}" BorderBrush="{StaticResource Ink}"
+                        <Border x:Name="Shadow" Background="{DynamicResource Ink}" CornerRadius="10" Margin="3,3,-3,-3" />
+                        <Border x:Name="Face" Background="{DynamicResource Paper}" BorderBrush="{DynamicResource Ink}"
                                 BorderThickness="2.5" CornerRadius="10" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter x:Name="Text" HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{StaticResource Ink}" />
+                            <ContentPresenter x:Name="Text" HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{DynamicResource Ink}" />
                         </Border>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Face" Property="Background" Value="{StaticResource Sunflower}" />
+                            <Setter TargetName="Face" Property="Background" Value="{DynamicResource Sunflower}" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Face" Property="Background" Value="{StaticResource Ink}" />
-                            <Setter TargetName="Text" Property="TextElement.Foreground" Value="{StaticResource Sunflower}" />
-                            <Setter TargetName="Shadow" Property="Background" Value="{StaticResource Pink}" />
+                            <Setter TargetName="Face" Property="Background" Value="{DynamicResource Ink}" />
+                            <Setter TargetName="Text" Property="TextElement.Foreground" Value="{DynamicResource Sunflower}" />
+                            <Setter TargetName="Shadow" Property="Background" Value="{DynamicResource Pink}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -106,12 +100,12 @@
         <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
         <Setter Property="FontWeight" Value="Bold" />
         <Setter Property="FontSize" Value="14" />
-        <Setter Property="Foreground" Value="{StaticResource Ink}" />
-        <Setter Property="Background" Value="{StaticResource Paper}" />
-        <Setter Property="BorderBrush" Value="{StaticResource Ink}" />
+        <Setter Property="Foreground" Value="{DynamicResource Ink}" />
+        <Setter Property="Background" Value="{DynamicResource Paper}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Ink}" />
         <Setter Property="BorderThickness" Value="2.5" />
         <Setter Property="Padding" Value="6,4" />
-        <Setter Property="CaretBrush" Value="{StaticResource Ink}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource Ink}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
@@ -121,7 +115,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Box" Property="Background" Value="{StaticResource Cream}" />
+                            <Setter TargetName="Box" Property="Background" Value="{DynamicResource Cream}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -138,12 +132,12 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Thumb">
                     <Grid>
-                        <Border Background="{StaticResource Ink}" CornerRadius="6" Margin="3,3,-3,-3" />
-                        <Border x:Name="Face" Background="{StaticResource Sunflower}" BorderBrush="{StaticResource Ink}" BorderThickness="2.5" CornerRadius="6" />
+                        <Border Background="{DynamicResource Ink}" CornerRadius="6" Margin="3,3,-3,-3" />
+                        <Border x:Name="Face" Background="{DynamicResource Sunflower}" BorderBrush="{DynamicResource Ink}" BorderThickness="2.5" CornerRadius="6" />
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsDragging" Value="True">
-                            <Setter TargetName="Face" Property="Background" Value="{StaticResource Pink}" />
+                            <Setter TargetName="Face" Property="Background" Value="{DynamicResource Pink}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -157,7 +151,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Slider">
                     <Grid>
-                        <Border Height="8" CornerRadius="4" Background="{StaticResource Cream}" BorderBrush="{StaticResource Ink}" BorderThickness="2" VerticalAlignment="Center" />
+                        <Border Height="8" CornerRadius="4" Background="{DynamicResource Cream}" BorderBrush="{DynamicResource Ink}" BorderThickness="2" VerticalAlignment="Center" />
                         <Track x:Name="PART_Track">
                             <Track.Thumb>
                                 <Thumb Style="{StaticResource SwivelSliderThumb}" />
@@ -169,7 +163,39 @@
         </Setter>
     </Style>
 
+    <!-- Switch: pill track with a square-ish knob; mint when on (the toggle on-state token). -->
+    <Style x:Key="SwivelSwitch" TargetType="ToggleButton">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Focusable" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <Grid Width="52" Height="28">
+                            <Border Background="{DynamicResource Ink}" CornerRadius="14" Margin="3,3,-3,-3" />
+                            <Border x:Name="Track" Background="{DynamicResource Paper}" BorderBrush="{DynamicResource Ink}" BorderThickness="2.5" CornerRadius="14" />
+                            <Border x:Name="Knob" Width="18" Height="18" CornerRadius="6" Background="{DynamicResource Ink}"
+                                    HorizontalAlignment="Left" Margin="5,0,0,0" />
+                        </Grid>
+                        <ContentPresenter Margin="12,0,0,0" VerticalAlignment="Center" TextElement.FontFamily="{StaticResource BodyFont}"
+                                          TextElement.FontWeight="SemiBold" TextElement.FontSize="13" TextElement.Foreground="{DynamicResource Ink}" />
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Track" Property="Background" Value="{DynamicResource Mint}" />
+                            <Setter TargetName="Knob" Property="HorizontalAlignment" Value="Right" />
+                            <Setter TargetName="Knob" Property="Margin" Value="0,0,5,0" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource Pink}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="SwivelPrimaryButton" TargetType="Button" BasedOn="{StaticResource SwivelButton}">
-        <Setter Property="Background" Value="{StaticResource Sunflower}" />
+        <Setter Property="Background" Value="{DynamicResource Sunflower}" />
     </Style>
 </ResourceDictionary>

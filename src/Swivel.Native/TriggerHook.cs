@@ -29,6 +29,11 @@ public static class TriggerHook
     /// <summary>While true the trigger always cycles, and arrows, Enter and Esc are forwarded.</summary>
     public static bool OverlayOpen { get => _overlayOpen; set => _overlayOpen = value; }
 
+    private static volatile bool _enabled = true;
+
+    /// <summary>Off (Swivel switched off or paused), the trigger passes straight through to apps.</summary>
+    public static bool Enabled { get => _enabled; set => _enabled = value; }
+
     public static void SetTrigger(params uint[] virtualKeys) => _triggerKeys = virtualKeys;
 
     public static void Start()
@@ -92,7 +97,7 @@ public static class TriggerHook
                 return true;
             }
             if (_swallowingTrigger) return true; // auto-repeat of a tap already taken
-            if (!_overlayOpen && !PrimaryButtonDown()) return false;
+            if (!_overlayOpen && (!_enabled || !PrimaryButtonDown())) return false;
             _swallowingTrigger = true;
             Raise(HookSignal.TriggerTap);
             return true;

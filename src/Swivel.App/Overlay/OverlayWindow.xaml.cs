@@ -125,6 +125,9 @@ public partial class OverlayWindow : Window
         Commit(CurrentRing()[wedge]!, paths);
     }
 
+    /// <summary>Raised on the UI thread when the wheel opens (onboarding listens for practice).</summary>
+    public event Action? Opened;
+
     /// <summary>Raised on the UI thread when the user lets go on a wedge.</summary>
     public event Action<WheelDrop>? Dropped;
 
@@ -248,6 +251,7 @@ public partial class OverlayWindow : Window
         PlayOpen();
 
         _releasePoll.Start();
+        Opened?.Invoke();
         CompositionTarget.Rendering += OnFirstFrame;
     }
 
@@ -503,7 +507,7 @@ public partial class OverlayWindow : Window
             _ => Palette.Sky,
         };
         var tileColours = new[] { Palette.Sky, Palette.Mint, Palette.Orange, Palette.Lilac, Palette.Pink, Palette.Sunflower, Palette.Paper }
-            .Where(b => b != Disc.Fill).ToArray();
+            .Where(b => Palette.HighContrast ? Palette.Same(b, Palette.Paper) : !Palette.Same(b, Disc.Fill)).Take(Palette.HighContrast ? 1 : 7).ToArray();
 
         var ring = CurrentRing();
         for (int i = 0; i < _tiles.Length; i++)

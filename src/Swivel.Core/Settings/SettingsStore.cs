@@ -36,11 +36,17 @@ public sealed class SettingsStore : IDisposable
     public void Save(AppSettings settings)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
+        string json = JsonSerializer.Serialize(settings, Json);
         string temp = _path + ".tmp";
-        File.WriteAllText(temp, JsonSerializer.Serialize(settings, Json));
+        File.WriteAllText(temp, json);
         File.Move(temp, _path, overwrite: true);
+        _lastJson = json;
         Current = settings;
+        Changed?.Invoke(settings);
     }
+
+    /// <summary>The text Swivel itself last wrote, so the watcher ignores its own saves.</summary>
+    private string? _lastJson;
 
     public void StartWatching()
     {
@@ -75,8 +81,11 @@ public sealed class SettingsStore : IDisposable
     {
         try
         {
-            var next = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(_path), Json);
-            if (next is null || next == Current) return;
+            string json = File.ReadAllText(_path);
+            if (json == _lastJson) return;
+            _lastJson = json;
+            var next = JsonSerializer.Deserialize<AppSettings>(json, Json);
+            if (next is null) return;
             Current = next;
             Changed?.Invoke(next);
         }

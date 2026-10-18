@@ -54,5 +54,12 @@ public sealed record AppSettings
     /// <summary>Plays wheel motion when Windows animations are also on.</summary>
     public bool Animations { get; init; } = true;
 
-    public bool LaunchAtSignIn { get; init; }
+    /// <summary>Starts Swivel in the tray when the user signs in to Windows.</summary>
+    public bool LaunchAtSignIn { get; init; } = true;
+
+    /// <summary>The flyout's on/off switch. Off, the trigger and shortcuts do nothing; jobs still finish.</summary>
+    public bool Enabled { get; init; } = true;
+
+    /// <summary>True once the first-run steps have been seen (or skipped).</summary>
+    public bool OnboardingDone { get; init; }
 }

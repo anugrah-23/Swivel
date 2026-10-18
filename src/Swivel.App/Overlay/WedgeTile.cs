@@ -26,7 +26,7 @@ internal sealed class WedgeTile : Grid
     /// <summary>The active tile casts a pink shadow, or sunflower when the disc itself is pink.</summary>
     public void SetDisc(Brush disc)
     {
-        _activeShadow = disc == Palette.Pink ? Palette.Sunflower : Palette.Pink;
+        _activeShadow = Palette.Same(disc, Palette.Pink) && !Palette.HighContrast ? Palette.Sunflower : Palette.Pink;
         ApplyFill();
     }
 

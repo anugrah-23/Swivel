@@ -21,6 +21,13 @@ internal static class Palette
     public static FontFamily Body => Get<FontFamily>("BodyFont");
     public static FontFamily Mono => Get<FontFamily>("MonoFont");
 
+    /// <summary>True once the high-contrast palette is in force.</summary>
+    public static bool HighContrast { get; private set; }
+
+    /// <summary>Token brushes are created fresh per use, so compare them by colour, not reference.</summary>
+    public static bool Same(Brush? a, Brush? b) =>
+        a is SolidColorBrush x && b is SolidColorBrush y && x.Color == y.Color;
+
     /// <summary>The animation preference from Swivel's own settings.</summary>
     public static bool UserAnimations { get; set; } = true;
 
@@ -28,6 +35,33 @@ internal static class Palette
     public static bool Animations => UserAnimations && SystemParameters.ClientAreaAnimation;
 
     private static T Get<T>(string key) => (T)Application.Current.FindResource(key);
+
+    private static readonly string[] Tokens = ["Ink", "Cream", "Paper", "Sunflower", "Pink", "Sky", "Mint", "Orange", "Lilac"];
+
+    /// <summary>
+    /// Creates the token brushes in the application's resources. Must run before any window or style
+    /// loads (styles and templates pick the brushes up on first use). In high-contrast mode the palette
+    /// collapses to system colours while outlines, shapes and labels stay, so state is still carried by
+    /// fill and shape rather than hue.
+    /// </summary>
+    public static void InstallBrushes(ResourceDictionary resources, bool highContrast)
+    {
+        HighContrast = highContrast;
+        // Tokens.xaml styles use {DynamicResource Ink}; windows use {StaticResource Ink} when they load.
+        var tokens = resources;
+        foreach (string token in Tokens)
+        {
+            Color colour = !highContrast ? (Color)tokens[token + "Color"] : token switch
+            {
+                "Ink" => SystemColors.WindowTextColor,
+                "Pink" => SystemColors.HighlightColor,
+                _ => SystemColors.WindowColor,
+            };
+            var brush = new SolidColorBrush(colour);
+            brush.Freeze();
+            tokens[token] = brush;
+        }
+    }
 
     /// <summary>Animates a double property, or snaps it when animations are off.</summary>
     public static void To(Animatable target, DependencyProperty property, double value, int ms,

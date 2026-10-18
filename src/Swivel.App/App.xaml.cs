@@ -49,6 +49,7 @@ public partial class App : Application
 
         base.OnStartup(e);
         _services = new SwivelServices(Dispatcher);
+        Palette.InstallBrushes(Resources, SystemParameters.HighContrast || Environment.GetEnvironmentVariable("SWIVEL_HIGH_CONTRAST") == "1");
 
         if (e.Args is ["--snapshot", var outDir, .. var files] && files.Length > 0)
         {
@@ -62,9 +63,16 @@ public partial class App : Application
             return;
         }
 
+        _state = new ShellState(_services, Dispatcher);
         _feedback = new JobFeedback(_services);
         _overlay = new OverlayWindow(_services);
-        _overlay.Dropped += _feedback.OnDrop;
+        _overlay.Dropped += drop =>
+        {
+            // While onboarding's practice step is up, drops are caught there and nothing runs.
+            if (_onboarding?.Practising == true) _onboarding.Caught(drop.Operation);
+            else _feedback.OnDrop(drop);
+        };
+        _overlay.Opened += () => _onboarding?.WheelOpened();
         _overlay.Prewarm();
 
         var overlay = _overlay;
@@ -90,10 +98,51 @@ public partial class App : Application
         _instance.Listen();
         if (wheelPaths.Length > 0) _instance.Gather(wheelPaths);
 
-        _tray = Tray.Create(_services, Quit);
+        _flyout = new FlyoutWindow(_services, _state, OpenSettings, Quit);
+        _tray = Tray.Create(_flyout);
         _services.GroupFinished += (_, _) => ScheduleIdleTrim();
         ScheduleIdleTrim();
         Log.Information("Swivel started (elevated: {Elevated}, isolated: {Isolated})", Environment.IsPrivilegedProcess, AppPaths.Isolated);
+
+        if (Updates.Enabled && !AppPaths.Isolated)
+        {
+            _updateTimer = new DispatcherTimer(TimeSpan.FromHours(24), DispatcherPriority.Background, async (_, _) => await CheckForUpdatesAsync(), Dispatcher);
+            _ = Dispatcher.InvokeAsync(async () => { await Task.Delay(TimeSpan.FromMinutes(1)); await CheckForUpdatesAsync(); });
+        }
+
+        if (!_state.Settings.OnboardingDone && !AppPaths.Isolated)
+        {
+            _onboarding = new OnboardingWindow(_state);
+            _onboarding.Closed += (_, _) => _onboarding = null;
+            _onboarding.Show();
+        }
+    }
+
+    private DispatcherTimer? _updateTimer;
+
+    private async Task CheckForUpdatesAsync()
+    {
+        if (await Updates.CheckAndDownloadAsync() is { } version)
+            _feedback?.Offer($"Swivel {version} is ready.", "Restart Swivel to switch over. Jobs in progress finish first.", "Restart now", Updates.RestartIntoUpdate);
+    }
+
+    private ShellState? _state;
+    private FlyoutWindow? _flyout;
+    private SettingsWindow? _settingsWindow;
+    private OnboardingWindow? _onboarding;
+    private (string Selection, string Clipboard)? _registeredHotkeys;
+
+    private void OpenSettings()
+    {
+        if (_settingsWindow is { IsLoaded: true })
+        {
+            _settingsWindow.Activate();
+            return;
+        }
+        _settingsWindow = new SettingsWindow(_state!, _hotkeys);
+        _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+        _settingsWindow.Show();
+        Win32.ForceForeground(new System.Windows.Interop.WindowInteropHelper(_settingsWindow).Handle);
     }
 
     private void OpenWheel(IReadOnlyList<string> paths, string route)
@@ -107,14 +156,19 @@ public partial class App : Application
         TriggerHook.SetTrigger(TriggerKeys.Parse(settings.Trigger));
         Palette.UserAnimations = settings.Animations;
 
-        // An isolated instance (tests, side-by-side builds) must not take over the real menu or hotkeys.
+        // An isolated instance (tests, side-by-side builds) must not take over the real menu, hotkeys or Run key.
         if (!AppPaths.Isolated)
         {
-            ExplorerMenu.Apply(settings.ExplorerMenu, Environment.ProcessPath!);
-            _hotkeys?.Clear();
-            RegisterSelectionHotkey(settings.SelectionHotkey);
-            if (_hotkeys?.Register(settings.ClipboardHotkey, OnClipboardHotkey) == false)
-                _feedback?.Info($"{settings.ClipboardHotkey} is taken.", "Another app owns that shortcut. Pick a new one in settings.json.");
+            ExplorerMenu.Apply(settings.ExplorerMenu, SignIn.LauncherPath);
+            SignIn.Apply(settings.LaunchAtSignIn);
+            if (_hotkeys != null && _registeredHotkeys != (settings.SelectionHotkey, settings.ClipboardHotkey))
+            {
+                _registeredHotkeys = (settings.SelectionHotkey, settings.ClipboardHotkey);
+                _hotkeys.Clear();
+                RegisterSelectionHotkey(settings.SelectionHotkey);
+                if (!_hotkeys.Register(settings.ClipboardHotkey, OnClipboardHotkey))
+                    _feedback?.Info($"{settings.ClipboardHotkey} is taken.", "Another app owns that shortcut. Pick a new one in Settings.");
+            }
         }
         Log.Information("Settings applied: trigger {Trigger}, output {Output}", settings.Trigger, settings.Output.Location);
     }
@@ -136,10 +190,16 @@ public partial class App : Application
                 return;
             }
         }
-        _feedback?.Info($"{wanted} is taken.", "Another app owns that shortcut. Pick a new one in settings.json.");
+        _feedback?.Info($"{wanted} is taken.", "Another app owns that shortcut. Pick a new one in Settings.");
     }
 
     private void OnSelectionHotkey()
+    {
+        if (_state?.IsListening == false) return;
+        SelectionHotkey();
+    }
+
+    private void SelectionHotkey()
     {
         var paths = ExplorerSelection.ForForeground();
         if (paths.Count == 0) _feedback?.Info("Nothing selected.", "Select files in Explorer or on the desktop, then press the shortcut.");
@@ -147,6 +207,12 @@ public partial class App : Application
     }
 
     private void OnClipboardHotkey()
+    {
+        if (_state?.IsListening == false) return;
+        ClipboardHotkey();
+    }
+
+    private void ClipboardHotkey()
     {
         var paths = ClipboardRoute.Materialize();
         if (paths.Count == 0) _feedback?.Info("Clipboard's empty.", "Copy some files, a picture or text first.");
@@ -182,6 +248,7 @@ public partial class App : Application
         overlay.Close();
         foreach (string panel in new[] { "resize", "crop", "trim" })
             PanelWindow.Snapshot(panel, files[0], Path.Combine(outDir, $"panel-{panel}.png"));
+        Shell.Snapshots.Windows(outDir, _services!, new ShellState(_services!, Dispatcher));
         Quit();
     }
 

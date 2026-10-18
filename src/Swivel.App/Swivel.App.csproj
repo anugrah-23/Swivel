@@ -9,9 +9,14 @@
     <!-- Swivel's UI is English-only for v1; skip the framework's translated resource folders. -->
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <ApplicationIcon>Assets\swivel.ico</ApplicationIcon>
+    <StartupObject>Swivel.App.Program</StartupObject>
+    <Version>0.4.0</Version>
+    <!-- GitHub repository whose Releases are Swivel's update feed (Velopack). -->
+    <SwivelUpdateRepo>https://github.com/anugrah-23/Swivel</SwivelUpdateRepo>
   </PropertyGroup>
   <ItemGroup>
     <Using Include="System.IO" />
+    <AssemblyMetadata Include="UpdateRepo" Value="$(SwivelUpdateRepo)" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Swivel.Core\Swivel.Core.csproj" />
@@ -22,6 +27,7 @@
     <PackageReference Include="H.NotifyIcon.Wpf" Version="2.4.1" />
     <PackageReference Include="Serilog" Version="4.4.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageReference Include="Velopack" Version="1.2.158" />
   </ItemGroup>
   <ItemGroup>
     <!-- Core engines ship beside Swivel.exe; Pandoc and LibreOffice are optional packs fetched on first use. -->

@@ -34,6 +34,7 @@ public sealed class HotkeyHost : IDisposable
             return false;
         }
         _handlers[id] = handler;
+        Registered.Add(Normalise(gesture));
         return true;
     }
 
@@ -41,6 +42,7 @@ public sealed class HotkeyHost : IDisposable
     {
         foreach (int id in _handlers.Keys) Win32.UnregisterHotKey(_window.Handle, id);
         _handlers.Clear();
+        Registered.Clear();
     }
 
     private nint WndProc(nint hwnd, int msg, nint wParam, nint lParam, ref bool handled)
@@ -51,6 +53,37 @@ public sealed class HotkeyHost : IDisposable
             handler();
         }
         return 0;
+    }
+
+    /// <summary>True if another app already owns the gesture (checked by briefly registering it).</summary>
+    public bool IsTakenElsewhere(string gesture)
+    {
+        if (!TryParse(gesture, out uint modifiers, out uint vk)) return false;
+        if (_handlers.Count > 0 && Registered.Contains(Normalise(gesture))) return false; // held by Swivel itself
+        const int ProbeId = 0xBEEF;
+        if (!Win32.RegisterHotKey(_window.Handle, ProbeId, modifiers | Win32.MOD_NOREPEAT, vk)) return true;
+        Win32.UnregisterHotKey(_window.Handle, ProbeId);
+        return false;
+    }
+
+    private readonly HashSet<string> Registered = new(StringComparer.OrdinalIgnoreCase);
+
+    private static string Normalise(string gesture) =>
+        string.Join('+', gesture.Split('+', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
+
+    /// <summary>Turns a key press into a gesture string such as "Ctrl+Alt+W", or null for a bare key.</summary>
+    public static string? Describe(ModifierKeys modifiers, Key key)
+    {
+        if (key is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin or Key.System)
+            return null;
+        var parts = new List<string>();
+        if (modifiers.HasFlag(ModifierKeys.Control)) parts.Add("Ctrl");
+        if (modifiers.HasFlag(ModifierKeys.Alt)) parts.Add("Alt");
+        if (modifiers.HasFlag(ModifierKeys.Shift)) parts.Add("Shift");
+        if (modifiers.HasFlag(ModifierKeys.Windows)) parts.Add("Win");
+        if (parts.Count == 0) return null;
+        parts.Add(key is >= Key.D0 and <= Key.D9 ? ((int)key - (int)Key.D0).ToString() : key.ToString());
+        return string.Join('+', parts);
     }
 
     public static bool TryParse(string gesture, out uint modifiers, out uint vk)

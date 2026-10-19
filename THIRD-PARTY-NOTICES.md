@@ -15,6 +15,7 @@ Swivel's code; Swivel starts them as child processes.
 | PDFsharp 6.2.4 | PDF merge, split, compress, images to PDF | MIT | https://github.com/empira/PDFsharp |
 | PDFium (bblanchon builds) | Rendering PDF pages | Apache-2.0 / BSD-3-Clause | https://github.com/bblanchon/pdfium-binaries |
 | SharpCompress | ZIP, TAR, GZIP, RAR and 7z reading | MIT | https://github.com/adamhathcock/sharpcompress |
+| Open XML SDK (DocumentFormat.OpenXml) | Writing Word and PowerPoint files | MIT | https://github.com/dotnet/Open-XML-SDK |
 | Microsoft.Data.Sqlite / SQLite | Job history | MIT / public domain | https://www.sqlite.org |
 | H.NotifyIcon | Tray icon | MIT | https://github.com/HavenDV/H.NotifyIcon |
 | Serilog | Logging | Apache-2.0 | https://serilog.net |

@@ -67,6 +67,11 @@ public sealed class OperationCatalog
         new("doc.epub", WheelMode.Convert, "EPUB", "E-book", Text, ".epub", Engines.Document),
         new("doc.txt", WheelMode.Convert, "TXT", "Bare", Text, ".txt", Engines.Document),
 
+        // ---- Convert: PDF to Office (Word's own reflow when installed; Swivel's rebuild otherwise)
+        new("pdf.docx", WheelMode.Convert, "DOCX", "Editable", Pdf, ".docx", Engines.Pdf) { Heavy = true },
+        new("pdf.pptx", WheelMode.Convert, "PPTX", "Exact", Pdf, ".pptx", Engines.Pdf),
+        new("pdf.pptx-edit", WheelMode.Convert, "PPTX", "Editable", Pdf, ".pptx", Engines.Pdf),
+
         // ---- Convert: PDF pages to pictures
         new("pdf.png", WheelMode.Convert, "PNG", "Pages", Pdf, null, Engines.Pdf)
         {

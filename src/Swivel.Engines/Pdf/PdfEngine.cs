@@ -21,7 +21,46 @@ public sealed class PdfEngine : IEngine
 
     public string Name => Operation.Engines.Pdf;
 
-    public Task RunAsync(Job job, IProgress<double> progress, CancellationToken ct) =>
+    /// <summary>Raised when Word couldn't reflow a PDF and the built-in rebuild ran instead (for the log).</summary>
+    public static event Action<string, Exception>? WordFallback;
+
+    public async Task RunAsync(Job job, IProgress<double> progress, CancellationToken ct)
+    {
+        if (job.Operation.Id == "pdf.docx")
+        {
+            await ToDocxAsync(job, progress, ct);
+            return;
+        }
+        await RunSync(job, progress, ct);
+    }
+
+    /// <summary>Microsoft Word's own PDF reflow when it's installed; Swivel's basic rebuild otherwise.</summary>
+    private static async Task ToDocxAsync(Job job, IProgress<double> progress, CancellationToken ct)
+    {
+        string input = job.Inputs[0];
+        if (job.Operation.Parameter("engine", "auto") != "basic" && Documents.OfficeEngine.HasWord)
+        {
+            try
+            {
+                progress.Report(0.1);
+                await Documents.OfficeEngine.ReflowPdfWithWordAsync(Path.GetFullPath(input), job.TempPath!, ct);
+                progress.Report(1);
+                return;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                WordFallback?.Invoke(input, ex);
+            }
+        }
+        await Task.Run(() =>
+        {
+            _ = ImageEngine.Configured.Value;
+            PdfToOffice.ToDocx(input, job.TempPath!, progress, ct);
+            progress.Report(1);
+        }, ct);
+    }
+
+    private static Task RunSync(Job job, IProgress<double> progress, CancellationToken ct) =>
         Task.Run(() =>
         {
             _ = ImageEngine.Configured.Value;
@@ -34,6 +73,8 @@ public sealed class PdfEngine : IEngine
                     case "pdf.compress": Compress(job.Inputs[0], job.TempPath!, progress, ct); break;
                     case "pdf.png" or "pdf.jpg": ToImages(job.Inputs[0], job.TempPath!, job.Operation.Parameter("format", "png"), progress, ct); break;
                     case "image.combine-pdf": Combine(NaturalOrder(job.Inputs), job.TempPath!, progress, ct); break;
+                    case "pdf.pptx": PdfToOffice.ToPptx(job.Inputs[0], job.TempPath!, editable: false, progress, ct); break;
+                    case "pdf.pptx-edit": PdfToOffice.ToPptx(job.Inputs[0], job.TempPath!, editable: true, progress, ct); break;
                     default: throw new JobException($"{job.Operation.Label} isn't built yet.");
                 }
             }

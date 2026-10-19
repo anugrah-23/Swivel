@@ -20,6 +20,7 @@ public static class Voice
         FileKind.Markdown => "Markdown file",
         FileKind.Txt => "text file",
         FileKind.Docx => "Word doc",
+        FileKind.Pptx => "PowerPoint deck",
         FileKind.Epub => "e-book",
         FileKind.Html => "web page",
         FileKind.SevenZip => "7z",

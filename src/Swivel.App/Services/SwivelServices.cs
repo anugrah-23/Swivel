@@ -70,6 +70,7 @@ public sealed class SwivelServices : IAsyncDisposable
             ],
             OutputDirectoryFor);
         _queue.GroupCompleted += OnGroupCompleted;
+        PdfEngine.WordFallback += (input, ex) => Log.Warning(ex, "Word could not reflow {Input}; used the built-in rebuild", input);
         CleanOldDrops();
         _ = Usage();
     }

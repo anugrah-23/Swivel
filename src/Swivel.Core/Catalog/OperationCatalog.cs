@@ -123,6 +123,10 @@ public sealed class OperationCatalog
         {
             CombinesInputs = true, MinInputs = 2, OutputSuffix = " merged",
         },
+        new("pdf.organize", WheelMode.Tools, "Pages", "Organise", Pdf, ".pdf", Engines.Pdf)
+        {
+            CombinesInputs = true, Panel = "pages", OutputSuffix = " edited",
+        },
         new("pdf.split", WheelMode.Tools, "Split", "Pages", Pdf, null, Engines.Pdf) { OutputIsFolder = true, OutputSuffix = " pages" },
         new("pdf.compress", WheelMode.Tools, "Compress", "Lighter", Pdf, null, Engines.Pdf),
 

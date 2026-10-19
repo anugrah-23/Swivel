@@ -134,6 +134,25 @@ internal static partial class Pdfium
         }
     }
 
+    /// <summary>Every page's size in points, as displayed (the page's own rotation applied).</summary>
+    public static IReadOnlyList<(double Width, double Height)> PageSizes(byte[] pdf, string name)
+    {
+        lock (Gate)
+        {
+            using var doc = Open(pdf, name);
+            int count = FPDF_GetPageCount(doc.Handle);
+            var sizes = new List<(double, double)>(count);
+            for (int i = 0; i < count; i++)
+            {
+                nint page = FPDF_LoadPage(doc.Handle, i);
+                if (page == 0) { sizes.Add((612, 792)); continue; }
+                try { sizes.Add((FPDF_GetPageWidthF(page), FPDF_GetPageHeightF(page))); }
+                finally { FPDF_ClosePage(page); }
+            }
+            return sizes;
+        }
+    }
+
     /// <summary>Renders one page (with its text) at a DPI.</summary>
     public static Page RenderOne(byte[] pdf, string name, int index, double dpi)
     {

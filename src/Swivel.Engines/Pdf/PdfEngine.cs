@@ -73,6 +73,7 @@ public sealed class PdfEngine : IEngine
                     case "pdf.compress": Compress(job.Inputs[0], job.TempPath!, progress, ct); break;
                     case "pdf.png" or "pdf.jpg": ToImages(job.Inputs[0], job.TempPath!, job.Operation.Parameter("format", "png"), progress, ct); break;
                     case "image.combine-pdf": Combine(NaturalOrder(job.Inputs), job.TempPath!, progress, ct); break;
+                    case "pdf.organize": Organize(job, progress, ct); break;
                     case "pdf.pptx": PdfToOffice.ToPptx(job.Inputs[0], job.TempPath!, editable: false, progress, ct); break;
                     case "pdf.pptx-edit": PdfToOffice.ToPptx(job.Inputs[0], job.TempPath!, editable: true, progress, ct); break;
                     default: throw new JobException($"{job.Operation.Label} isn't built yet.");
@@ -104,6 +105,45 @@ public sealed class PdfEngine : IEngine
             progress.Report((i + 1.0) / inputs.Count * 0.9);
         }
         merged.Save(output);
+    }
+
+    /// <summary>
+    /// Builds a new PDF from the organiser's page plan: any pages of the dropped PDFs (plus any added
+    /// in the organiser), in any order, each with its own extra rotation. Pages left out are dropped.
+    /// </summary>
+    private static void Organize(Job job, IProgress<double> progress, CancellationToken ct)
+    {
+        var sources = job.Inputs.Concat(job.Operation.Parameter("sources", "")
+            .Split('|', StringSplitOptions.RemoveEmptyEntries)).ToArray();
+        IReadOnlyList<PlannedPage> plan;
+        try { plan = PagePlan.Parse(job.Operation.Parameter("plan", "")); }
+        catch (FormatException ex) { throw new JobException("The page plan didn't make sense.", ex); }
+        if (plan.Count == 0) throw new JobException("There are no pages left to save.");
+
+        var opened = new Dictionary<int, PdfDocument>();
+        try
+        {
+            using var output = new PdfDocument();
+            for (int i = 0; i < plan.Count; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                var item = plan[i];
+                if (item.Source >= sources.Length) throw new JobException("The page plan refers to a missing file.");
+                if (!opened.TryGetValue(item.Source, out var source))
+                    opened[item.Source] = source = Open(sources[item.Source], PdfDocumentOpenMode.Import);
+                if (item.Page >= source.PageCount)
+                    throw new JobException($"{Path.GetFileName(sources[item.Source])} has no page {item.Page + 1}.");
+
+                var page = output.AddPage(source.Pages[item.Page]);
+                page.Rotate = PagePlan.Normalise(page.Rotate + item.Rotation);
+                progress.Report((i + 1.0) / plan.Count * 0.9);
+            }
+            output.Save(job.TempPath!);
+        }
+        finally
+        {
+            foreach (var document in opened.Values) document.Dispose();
+        }
     }
 
     private static void Split(string input, string folder, IProgress<double> progress, CancellationToken ct)

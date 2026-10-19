@@ -21,4 +21,8 @@
     <Using Include="System.IO" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Swivel.Engines\Swivel.Engines.csproj" />
+  </ItemGroup>
+
 </Project>

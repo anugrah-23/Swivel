@@ -80,6 +80,7 @@ public sealed class PanelWindow : Window
     {
         string subtitle = files.Count == 1 ? Path.GetFileName(files[0].TrimEnd('\\')) : $"{files.Count} files";
         if (op.Panel == "folder") return Task.FromResult(AskFolder(op, files));
+        if (op.Panel == "pages") return PagesWindow.AskAsync(files);
 
         var panel = new PanelWindow(op.Label.ToUpperInvariant(), subtitle);
         switch (op.Panel)

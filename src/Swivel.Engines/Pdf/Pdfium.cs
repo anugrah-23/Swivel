@@ -13,8 +13,16 @@ internal static partial class Pdfium
     private const int FPDF_ANNOT = 0x01, FPDF_PRINTING = 0x800;
     private const int MaxSide = 8000;
 
-    private static readonly Lock Gate = new();
+    internal static readonly Lock Gate = new();
     private static bool _initialised;
+
+    /// <summary>Initialises PDFium once; call under <see cref="Gate"/>.</summary>
+    internal static void EnsureInitialised()
+    {
+        if (_initialised) return;
+        FPDF_InitLibrary();
+        _initialised = true;
+    }
 
     /// <summary>A rendered page as tightly packed BGRA rows.</summary>
     public sealed record Page(byte[] Bgra, int Width, int Height);
@@ -53,7 +61,7 @@ internal static partial class Pdfium
         finally { FPDF_ClosePage(page); }
     }
 
-    private static Page RenderLoaded(nint page, int index, double dpi)
+    internal static Page RenderLoaded(nint page, int index, double dpi)
     {
         {
             double scale = dpi / 72.0;
@@ -163,7 +171,7 @@ internal static partial class Pdfium
         }
     }
 
-    private const int FPDF_PAGEOBJ_TEXT = 1, FPDF_PAGEOBJ_IMAGE = 3;
+    internal const int FPDF_PAGEOBJ_TEXT = 1, FPDF_PAGEOBJ_IMAGE = 3;
 
     private static unsafe List<TextLine> ReadLines(nint page, double pageHeight)
     {
@@ -343,40 +351,40 @@ internal static partial class Pdfium
         return new Document(doc, pin);
     }
 
-    [LibraryImport(Dll)] private static partial void FPDF_InitLibrary();
-    [LibraryImport(Dll, StringMarshalling = StringMarshalling.Utf8)] private static partial nint FPDF_LoadMemDocument64(nint data, nuint size, string? password);
-    [LibraryImport(Dll)] private static partial uint FPDF_GetLastError();
-    [LibraryImport(Dll)] private static partial int FPDF_GetPageCount(nint document);
-    [LibraryImport(Dll)] private static partial nint FPDF_LoadPage(nint document, int index);
-    [LibraryImport(Dll)] private static partial float FPDF_GetPageWidthF(nint page);
-    [LibraryImport(Dll)] private static partial float FPDF_GetPageHeightF(nint page);
-    [LibraryImport(Dll)] private static partial nint FPDFBitmap_Create(int width, int height, int alpha);
-    [LibraryImport(Dll)] private static partial int FPDFBitmap_FillRect(nint bitmap, int left, int top, int width, int height, uint color);
-    [LibraryImport(Dll)] private static partial void FPDF_RenderPageBitmap(nint bitmap, nint page, int x, int y, int width, int height, int rotate, int flags);
-    [LibraryImport(Dll)] private static partial nint FPDFBitmap_GetBuffer(nint bitmap);
-    [LibraryImport(Dll)] private static partial int FPDFBitmap_GetStride(nint bitmap);
-    [LibraryImport(Dll)] private static partial void FPDFBitmap_Destroy(nint bitmap);
-    [LibraryImport(Dll)] private static partial void FPDF_ClosePage(nint page);
-    [LibraryImport(Dll)] private static partial void FPDF_CloseDocument(nint document);
-    [LibraryImport(Dll)] private static partial int FPDFBitmap_GetWidth(nint bitmap);
-    [LibraryImport(Dll)] private static partial int FPDFBitmap_GetHeight(nint bitmap);
-    [LibraryImport(Dll)] private static partial int FPDFBitmap_GetFormat(nint bitmap);
+    [LibraryImport(Dll)] internal static partial void FPDF_InitLibrary();
+    [LibraryImport(Dll, StringMarshalling = StringMarshalling.Utf8)] internal static partial nint FPDF_LoadMemDocument64(nint data, nuint size, string? password);
+    [LibraryImport(Dll)] internal static partial uint FPDF_GetLastError();
+    [LibraryImport(Dll)] internal static partial int FPDF_GetPageCount(nint document);
+    [LibraryImport(Dll)] internal static partial nint FPDF_LoadPage(nint document, int index);
+    [LibraryImport(Dll)] internal static partial float FPDF_GetPageWidthF(nint page);
+    [LibraryImport(Dll)] internal static partial float FPDF_GetPageHeightF(nint page);
+    [LibraryImport(Dll)] internal static partial nint FPDFBitmap_Create(int width, int height, int alpha);
+    [LibraryImport(Dll)] internal static partial int FPDFBitmap_FillRect(nint bitmap, int left, int top, int width, int height, uint color);
+    [LibraryImport(Dll)] internal static partial void FPDF_RenderPageBitmap(nint bitmap, nint page, int x, int y, int width, int height, int rotate, int flags);
+    [LibraryImport(Dll)] internal static partial nint FPDFBitmap_GetBuffer(nint bitmap);
+    [LibraryImport(Dll)] internal static partial int FPDFBitmap_GetStride(nint bitmap);
+    [LibraryImport(Dll)] internal static partial void FPDFBitmap_Destroy(nint bitmap);
+    [LibraryImport(Dll)] internal static partial void FPDF_ClosePage(nint page);
+    [LibraryImport(Dll)] internal static partial void FPDF_CloseDocument(nint document);
+    [LibraryImport(Dll)] internal static partial int FPDFBitmap_GetWidth(nint bitmap);
+    [LibraryImport(Dll)] internal static partial int FPDFBitmap_GetHeight(nint bitmap);
+    [LibraryImport(Dll)] internal static partial int FPDFBitmap_GetFormat(nint bitmap);
 
-    [LibraryImport(Dll)] private static partial nint FPDFText_LoadPage(nint page);
-    [LibraryImport(Dll)] private static partial void FPDFText_ClosePage(nint textPage);
-    [LibraryImport(Dll)] private static partial int FPDFText_CountChars(nint textPage);
-    [LibraryImport(Dll)] private static partial uint FPDFText_GetUnicode(nint textPage, int index);
-    [LibraryImport(Dll)] private static partial int FPDFText_GetCharBox(nint textPage, int index, out double left, out double right, out double bottom, out double top);
-    [LibraryImport(Dll)] private static partial double FPDFText_GetFontSize(nint textPage, int index);
-    [LibraryImport(Dll)] private static partial int FPDFText_GetFontWeight(nint textPage, int index);
-    [LibraryImport(Dll)] private static partial int FPDFText_GetFillColor(nint textPage, int index, out uint r, out uint g, out uint b, out uint a);
-    [LibraryImport(Dll)] private static unsafe partial nuint FPDFText_GetFontInfo(nint textPage, int index, byte* buffer, nuint length, out int flags);
+    [LibraryImport(Dll)] internal static partial nint FPDFText_LoadPage(nint page);
+    [LibraryImport(Dll)] internal static partial void FPDFText_ClosePage(nint textPage);
+    [LibraryImport(Dll)] internal static partial int FPDFText_CountChars(nint textPage);
+    [LibraryImport(Dll)] internal static partial uint FPDFText_GetUnicode(nint textPage, int index);
+    [LibraryImport(Dll)] internal static partial int FPDFText_GetCharBox(nint textPage, int index, out double left, out double right, out double bottom, out double top);
+    [LibraryImport(Dll)] internal static partial double FPDFText_GetFontSize(nint textPage, int index);
+    [LibraryImport(Dll)] internal static partial int FPDFText_GetFontWeight(nint textPage, int index);
+    [LibraryImport(Dll)] internal static partial int FPDFText_GetFillColor(nint textPage, int index, out uint r, out uint g, out uint b, out uint a);
+    [LibraryImport(Dll)] internal static unsafe partial nuint FPDFText_GetFontInfo(nint textPage, int index, byte* buffer, nuint length, out int flags);
 
-    [LibraryImport(Dll)] private static partial int FPDFPage_CountObjects(nint page);
-    [LibraryImport(Dll)] private static partial nint FPDFPage_GetObject(nint page, int index);
-    [LibraryImport(Dll)] private static partial int FPDFPageObj_GetType(nint pageObject);
-    [LibraryImport(Dll)] private static partial int FPDFPageObj_GetBounds(nint pageObject, out float left, out float bottom, out float right, out float top);
-    [LibraryImport(Dll)] private static partial int FPDFPage_RemoveObject(nint page, nint pageObject);
-    [LibraryImport(Dll)] private static partial void FPDFPageObj_Destroy(nint pageObject);
-    [LibraryImport(Dll)] private static partial nint FPDFImageObj_GetRenderedBitmap(nint document, nint page, nint imageObject);
+    [LibraryImport(Dll)] internal static partial int FPDFPage_CountObjects(nint page);
+    [LibraryImport(Dll)] internal static partial nint FPDFPage_GetObject(nint page, int index);
+    [LibraryImport(Dll)] internal static partial int FPDFPageObj_GetType(nint pageObject);
+    [LibraryImport(Dll)] internal static partial int FPDFPageObj_GetBounds(nint pageObject, out float left, out float bottom, out float right, out float top);
+    [LibraryImport(Dll)] internal static partial int FPDFPage_RemoveObject(nint page, nint pageObject);
+    [LibraryImport(Dll)] internal static partial void FPDFPageObj_Destroy(nint pageObject);
+    [LibraryImport(Dll)] internal static partial nint FPDFImageObj_GetRenderedBitmap(nint document, nint page, nint imageObject);
 }

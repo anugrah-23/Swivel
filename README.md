@@ -18,7 +18,7 @@ Tap the trigger again to cycle **Convert → Tools → Actions**. Wedges are ran
 | **Images** | JPG, PNG, WebP, AVIF, HEIC, GIF, TIFF, BMP, ICO, SVG, PDF · compress, resize, smart crop, rotate, strip metadata, combine into one PDF |
 | **Audio and video** | MP4, WebM, MOV, MKV, AVI, GIF · MP3, M4A, FLAC, WAV, Opus, OGG · compress, trim, mute, pull frames, extract audio |
 | **Documents** | DOCX, Markdown, HTML, EPUB, TXT · DOCX, PPTX and XLSX to PDF |
-| **PDF** | to Word (DOCX) and PowerPoint (PPTX) · organise pages (reorder, rotate, delete, combine) · merge, split, compress, pages to PNG or JPG |
+| **PDF** | to Word (DOCX) and PowerPoint (PPTX) · edit text and images in place · organise pages (reorder, rotate, delete, combine) · merge, split, compress, pages to PNG or JPG |
 | **Archives** | ZIP, 7Z, TAR, GZIP · extract ZIP, 7z, TAR, GZ and RAR |
 | **Actions** | copy path, copy file, move to, copy to, share, float, terminal here, reveal |
 

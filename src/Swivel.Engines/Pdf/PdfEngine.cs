@@ -74,6 +74,7 @@ public sealed class PdfEngine : IEngine
                     case "pdf.png" or "pdf.jpg": ToImages(job.Inputs[0], job.TempPath!, job.Operation.Parameter("format", "png"), progress, ct); break;
                     case "image.combine-pdf": Combine(NaturalOrder(job.Inputs), job.TempPath!, progress, ct); break;
                     case "pdf.organize": Organize(job, progress, ct); break;
+                    case "pdf.edit": CopyEdited(job); break;
                     case "pdf.pptx": PdfToOffice.ToPptx(job.Inputs[0], job.TempPath!, editable: false, progress, ct); break;
                     case "pdf.pptx-edit": PdfToOffice.ToPptx(job.Inputs[0], job.TempPath!, editable: true, progress, ct); break;
                     default: throw new JobException($"{job.Operation.Label} isn't built yet.");
@@ -105,6 +106,16 @@ public sealed class PdfEngine : IEngine
             progress.Report((i + 1.0) / inputs.Count * 0.9);
         }
         merged.Save(output);
+    }
+
+    /// <summary>The editor has already written the edited PDF to a scratch file; it becomes the output.</summary>
+    private static void CopyEdited(Job job)
+    {
+        if (job.Operation.Parameter("error", "") is { Length: > 0 } error) throw new JobException(error); // the editor couldn't open it
+        string edited = job.Operation.Parameter("edited", "");
+        if (edited.Length == 0 || !File.Exists(edited)) throw new JobException("The edited PDF went missing before it could be saved.");
+        File.Copy(edited, job.TempPath!, overwrite: true);
+        try { File.Delete(edited); } catch (IOException) { } // scratch only; the temp sweep gets it otherwise
     }
 
     /// <summary>
